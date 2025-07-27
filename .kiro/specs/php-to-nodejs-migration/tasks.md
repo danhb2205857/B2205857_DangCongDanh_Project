@@ -35,6 +35,9 @@
 
 - [ ] 5. Tạo controllers cho CRUD operations
 
+
+
+
   - Implement DocGiaController với pagination và search
   - Implement SachController với pagination và search
   - Implement NhaXuatBanController với pagination và search
@@ -53,7 +56,11 @@
   - Test tất cả API endpoints
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5_
 
-- [ ] 7. Thiết lập frontend Vue.js cơ bản
+- [x] 7. Thiết lập frontend Vue.js cơ bản
+
+
+
+
 
   - Tạo cấu trúc frontend mới với Vite + Vue 3
   - Cấu hình package.json với dependencies cần thiết
