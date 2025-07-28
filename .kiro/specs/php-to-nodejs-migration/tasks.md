@@ -80,7 +80,10 @@
   - Test login/logout flow
   - _Requirements: 4.4, 6.4_
 
-- [ ] 9. Tạo layout và navigation
+- [x] 9. Tạo layout và navigation
+
+
+
 
   - Tạo Header.vue và Footer.vue từ PHP layouts
   - Tạo AdminLayout.vue với sidebar collapse menu

@@ -20,10 +20,14 @@ const routes = [
     component: AdminLayout,
     children: [
       { path: '', name: 'Dashboard', component: Dashboard },
+      { path: 'docgia', name: 'DocGia', component: UserList },
       { path: 'sach', name: 'Sach', component: Sach },
       { path: 'nhaxuatban', name: 'NhaXuatBan', component: NhaXuatBan },
       { path: 'users', name: 'UserList', component: UserList },
       { path: 'theodoimuonsach', name: 'TheoDoiMuonSach', component: TheoDoiMuonSach },
+      { path: 'thongke', name: 'ThongKe', component: Dashboard },
+      { path: 'settings', name: 'Settings', component: Dashboard },
+      { path: 'profile', name: 'Profile', component: Dashboard },
     ]
   },
   

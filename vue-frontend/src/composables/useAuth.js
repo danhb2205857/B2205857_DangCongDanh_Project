@@ -4,13 +4,21 @@ import axios from "axios";
 
 // Global state cho authentication
 const token = ref(localStorage.getItem("token"));
-const user = ref(JSON.parse(localStorage.getItem("user") || "null"));
+const user = ref((() => {
+  try {
+    const stored = localStorage.getItem("user");
+    return stored ? JSON.parse(stored) : null;
+  } catch (error) {
+    console.warn('Error parsing user from localStorage:', error);
+    return null;
+  }
+})());
 
 export function useAuth() {
 
   // Computed properties
   const isAuthenticated = computed(() => !!token.value);
-  const currentUser = computed(() => user.value);
+  const currentUser = computed(() => user.value || null);
 
   // Login function
   const login = async (credentials) => {
@@ -26,7 +34,11 @@ export function useAuth() {
       user.value = response.data.data.user;
 
       localStorage.setItem("token", response.data.data.token);
-      localStorage.setItem("user", JSON.stringify(response.data.data.user));
+      try {
+        localStorage.setItem("user", JSON.stringify(response.data.data.user));
+      } catch (error) {
+        console.warn('Error saving user to localStorage:', error);
+      }
 
       // Set default Authorization header cho axios
       axios.defaults.headers.common[
