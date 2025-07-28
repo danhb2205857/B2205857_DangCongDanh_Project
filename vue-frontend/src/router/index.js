@@ -7,14 +7,12 @@ import Dashboard from '../views/Dashboard.vue';
 import Sach from '../views/Sach.vue';
 import NhaXuatBan from '../views/NhaXuatBan.vue';
 import TheoDoiMuonSach from '../views/TheoDoiMuonSach.vue';
-import AuthTest from '../views/AuthTest.vue';
 import AdminLayout from '../layouts/AdminLayout.vue';
 
 const routes = [
   { path: '/', name: 'Home', component: Home },
   { path: '/login', name: 'Login', component: Login },
   { path: '/register', name: 'Register', component: Register },
-  { path: '/auth-test', name: 'AuthTest', component: AuthTest },
   
   // Admin routes with layout
   {
@@ -65,15 +63,23 @@ router.beforeEach((to, from, next) => {
     // Check token expiration for authenticated routes
     if (token && requiresAuth) {
       try {
-        // Simple token validation - just check if it exists and has 3 parts
+        // Validate JWT token format and expiration
         const tokenParts = token.split('.');
-        if (tokenParts.length === 3) {
-          next();
-        } else {
-          // Invalid token format
+        if (tokenParts.length !== 3) {
+          throw new Error('Invalid token format');
+        }
+        
+        // Decode and check expiration
+        const payload = JSON.parse(atob(tokenParts[1].replace(/-/g, '+').replace(/_/g, '/')));
+        const currentTime = Date.now() / 1000;
+        
+        if (payload.exp && payload.exp < currentTime) {
+          // Token expired
           localStorage.removeItem('token');
           localStorage.removeItem('user');
           next('/login');
+        } else {
+          next();
         }
       } catch (error) {
         // Invalid token, clear storage and redirect to login

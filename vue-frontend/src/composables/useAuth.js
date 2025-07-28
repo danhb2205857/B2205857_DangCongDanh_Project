@@ -7,7 +7,6 @@ const token = ref(localStorage.getItem("token"));
 const user = ref(JSON.parse(localStorage.getItem("user") || "null"));
 
 export function useAuth() {
-  const router = useRouter();
 
   // Computed properties
   const isAuthenticated = computed(() => !!token.value);
@@ -16,27 +15,42 @@ export function useAuth() {
   // Login function
   const login = async (credentials) => {
     try {
-      // TODO: Thay thế bằng API call thực tế khi backend sẵn sàng
-      const response = await mockLogin(credentials);
+      // Gọi API login thực tế
+      const response = await axios.post('/api/auth/login', {
+        msnv: credentials.username,
+        password: credentials.password
+      });
 
-      // Lưu token và user info
-      token.value = response.token;
-      user.value = response.user;
+      // Lưu token và user info từ response
+      token.value = response.data.data.token;
+      user.value = response.data.data.user;
 
-      localStorage.setItem("token", response.token);
-      localStorage.setItem("user", JSON.stringify(response.user));
+      localStorage.setItem("token", response.data.data.token);
+      localStorage.setItem("user", JSON.stringify(response.data.data.user));
 
       // Set default Authorization header cho axios
       axios.defaults.headers.common[
         "Authorization"
-      ] = `Bearer ${response.token}`;
+      ] = `Bearer ${response.data.data.token}`;
 
-      return { success: true, user: response.user };
+      return { success: true, user: response.data.data.user };
     } catch (error) {
       console.error("Login error:", error);
+      
+      // Xử lý các loại lỗi khác nhau
+      let errorMessage = 'Đăng nhập thất bại';
+      
+      if (error.response) {
+        // Server trả về error response
+        errorMessage = error.response.data.message || errorMessage;
+      } else if (error.request) {
+        // Không thể kết nối đến server
+        errorMessage = 'Không thể kết nối đến server';
+      }
+      
       return {
         success: false,
-        error: error.message || "Đăng nhập thất bại",
+        error: errorMessage,
       };
     }
   };
@@ -44,8 +58,8 @@ export function useAuth() {
   // Logout function
   const logout = async () => {
     try {
-      // TODO: Call logout API khi backend sẵn sàng
-      // await axios.post('/api/auth/logout')
+      // Gọi logout API
+      await axios.post('/api/auth/logout');
 
       // Clear local storage
       token.value = null;
@@ -56,8 +70,7 @@ export function useAuth() {
       // Remove Authorization header
       delete axios.defaults.headers.common["Authorization"];
 
-      // Redirect to login
-      router.push("/login");
+      // Note: Redirect should be handled by the component
 
       return { success: true };
     } catch (error) {
@@ -68,7 +81,7 @@ export function useAuth() {
       localStorage.removeItem("token");
       localStorage.removeItem("user");
       delete axios.defaults.headers.common["Authorization"];
-      router.push("/login");
+      // Note: Redirect should be handled by the component
 
       return { success: false, error: error.message };
     }
@@ -80,7 +93,7 @@ export function useAuth() {
 
     try {
       // Decode JWT token để check expiration
-      const payload = JSON.parse(base64UrlDecode(token.value.split(".")[1]));
+      const payload = decodeJWTPayload(token.value);
       const currentTime = Date.now() / 1000;
 
       return payload.exp < currentTime;
@@ -93,8 +106,13 @@ export function useAuth() {
   // Refresh token if needed
   const refreshToken = async () => {
     try {
-      // TODO: Implement refresh token logic khi backend sẵn sàng
-      console.log("Refresh token logic sẽ được implement sau");
+      const response = await axios.post('/api/auth/refresh');
+      
+      // Update token
+      token.value = response.data.token;
+      localStorage.setItem('token', response.data.token);
+      axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
+      
       return { success: true };
     } catch (error) {
       console.error("Refresh token error:", error);
@@ -128,60 +146,28 @@ export function useAuth() {
   };
 }
 
-// Mock login function - sẽ được thay thế bằng API call thực tế
-async function mockLogin(credentials) {
-  // Simulate API delay
-  await new Promise((resolve) => setTimeout(resolve, 1000));
-
-  // Mock validation
-  if (credentials.username === "admin" && credentials.password === "admin") {
-    const mockToken = generateMockJWT({
-      id: 1,
-      username: credentials.username,
-      name: "Quản trị viên",
-      role: "admin",
-    });
-
-    return {
-      token: mockToken,
-      user: {
-        id: 1,
-        username: credentials.username,
-        name: "Quản trị viên",
-        role: "admin",
-      },
-    };
-  } else {
-    throw new Error("Tên đăng nhập hoặc mật khẩu không đúng");
+// Helper function để decode JWT token (cho real tokens từ backend)
+function decodeJWTPayload(token) {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) {
+      throw new Error('Invalid token format');
+    }
+    
+    // Decode payload part
+    const payload = parts[1];
+    // Add padding if needed
+    const paddedPayload = payload + '='.repeat((4 - payload.length % 4) % 4);
+    // Replace URL-safe characters
+    const base64 = paddedPayload.replace(/-/g, '+').replace(/_/g, '/');
+    
+    return JSON.parse(atob(base64));
+  } catch (error) {
+    throw new Error('Failed to decode token');
   }
 }
 
-// Generate mock JWT token
-function generateMockJWT(payload) {
-  const header = base64UrlEncode(JSON.stringify({ alg: "HS256", typ: "JWT" }));
-  const exp = Math.floor(Date.now() / 1000) + 24 * 60 * 60; // 24 hours
-  const payloadWithExp = { ...payload, exp };
-  const encodedPayload = base64UrlEncode(JSON.stringify(payloadWithExp));
-  const signature = base64UrlEncode("mock-signature");
-
-  return `${header}.${encodedPayload}.${signature}`;
-}
-
-// Helper function để encode UTF-8 strings thành base64
-function base64UrlEncode(str) {
-  // Convert string to UTF-8 bytes
-  const utf8Bytes = new TextEncoder().encode(str);
-
-  // Convert bytes to base64
-  let binary = "";
-  utf8Bytes.forEach((byte) => {
-    binary += String.fromCharCode(byte);
-  });
-
-  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
-}
-
-// Helper function để decode base64 thành UTF-8 string
+// Helper function để decode base64 thành UTF-8 string (nếu cần)
 function base64UrlDecode(str) {
   // Add padding if needed
   str += "=".repeat((4 - (str.length % 4)) % 4);

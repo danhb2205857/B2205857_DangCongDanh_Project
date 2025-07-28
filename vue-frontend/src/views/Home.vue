@@ -6,8 +6,7 @@
                     <div class="jumbotron bg-primary text-white p-5 rounded">
                         <h1 class="display-4">Hệ Thống Quản Lý Mượn Sách</h1>
                         <p class="lead">Chào mừng bạn đến với hệ thống quản lý mượn sách hiện đại</p>
-                        <router-link to="/login" class="btn btn-light btn-lg me-3">Đăng nhập</router-link>
-                        <router-link to="/auth-test" class="btn btn-outline-light btn-lg">Test Auth</router-link>
+                        <router-link to="/login" class="btn btn-light btn-lg">Đăng nhập</router-link>
                     </div>
                 </div>
             </div>

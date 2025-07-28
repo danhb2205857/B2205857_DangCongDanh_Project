@@ -4,6 +4,162 @@ import { NhanVien } from '../models/index.js';
 
 export default {
   /**
+   * Đăng ký nhân viên mới
+   * POST /api/auth/register
+   */
+  async register(req, res) {
+    try {
+      const { username, fullName, password, email, phone, address, birthDate } = req.body;
+
+      // Validate required fields
+      if (!username || !fullName || !password || !phone || !address) {
+        return res.status(400).json({
+          success: false,
+          message: 'Tên đăng nhập, họ tên, mật khẩu, số điện thoại và địa chỉ là bắt buộc',
+          error: 'MISSING_FIELDS'
+        });
+      }
+
+      // Validate password
+      if (password.length < 6) {
+        return res.status(400).json({
+          success: false,
+          message: 'Mật khẩu phải có ít nhất 6 ký tự',
+          error: 'PASSWORD_TOO_SHORT'
+        });
+      }
+
+      if (!/[a-zA-Z]/.test(password)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Mật khẩu phải chứa ít nhất một chữ cái',
+          error: 'PASSWORD_INVALID'
+        });
+      }
+
+      if (!/\d/.test(password)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Mật khẩu phải chứa ít nhất một số',
+          error: 'PASSWORD_INVALID'
+        });
+      }
+
+      // Validate phone
+      if (!/^(0|\+84)[0-9]{9,10}$/.test(phone)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Số điện thoại không hợp lệ',
+          error: 'INVALID_PHONE'
+        });
+      }
+
+      // Validate email if provided
+      if (email && !/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(email)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Email không hợp lệ',
+          error: 'INVALID_EMAIL'
+        });
+      }
+
+      // Validate birth date if provided
+      if (birthDate) {
+        const date = new Date(birthDate);
+        if (isNaN(date.getTime())) {
+          return res.status(400).json({
+            success: false,
+            message: 'Ngày sinh không hợp lệ',
+            error: 'INVALID_BIRTH_DATE'
+          });
+        }
+
+        const today = new Date();
+        const age = today.getFullYear() - date.getFullYear();
+        if (age < 18 || age > 65) {
+          return res.status(400).json({
+            success: false,
+            message: 'Tuổi phải từ 18 đến 65',
+            error: 'INVALID_AGE'
+          });
+        }
+      }
+
+      // Check if username already exists
+      const existingNV = await NhanVien.findOne({ MSNV: username });
+      if (existingNV) {
+        return res.status(400).json({
+          success: false,
+          message: 'Tên đăng nhập đã tồn tại',
+          error: 'DUPLICATE_USERNAME'
+        });
+      }
+
+      // Check if email already exists
+      if (email) {
+        const existingEmail = await NhanVien.findOne({ Email: email });
+        if (existingEmail) {
+          return res.status(400).json({
+            success: false,
+            message: 'Email đã được sử dụng',
+            error: 'DUPLICATE_EMAIL'
+          });
+        }
+      }
+
+      // Check if phone already exists
+      const existingPhone = await NhanVien.findOne({ SoDienThoai: phone });
+      if (existingPhone) {
+        return res.status(400).json({
+          success: false,
+          message: 'Số điện thoại đã được sử dụng',
+          error: 'DUPLICATE_PHONE'
+        });
+      }
+
+      // Create new employee
+      const nhanVien = new NhanVien({
+        MSNV: username,
+        HoTenNV: fullName,
+        Password: password,
+        ChucVu: 'Nhân viên',
+        DiaChi: address,
+        SoDienThoai: phone,
+        Email: email || '',
+        NgaySinh: birthDate || null,
+        NgayVaoLam: new Date(),
+        TrangThai: 'Đang làm việc'
+      });
+
+      await nhanVien.save();
+
+      res.status(201).json({
+        success: true,
+        message: 'Đăng ký thành công'
+      });
+
+    } catch (error) {
+      console.error('Register error:', error);
+      
+      if (error.name === 'ValidationError') {
+        const errors = Object.values(error.errors).map(err => err.message);
+        return res.status(400).json({
+          success: false,
+          message: 'Dữ liệu đầu vào không hợp lệ',
+          errors,
+          error: 'VALIDATION_ERROR'
+        });
+      }
+
+      res.status(500).json({
+        success: false,
+        message: 'Lỗi hệ thống khi đăng ký',
+        error: 'REGISTER_ERROR'
+      });
+    }
+  },
+
+  /**
    * Đăng nhập nhân viên
    * POST /api/auth/login
    */
