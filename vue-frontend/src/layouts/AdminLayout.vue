@@ -44,7 +44,7 @@
                     <div class="col-md-4">
                         <div class="admin-profile">
                             <div class="admin-info">
-                                <p class="admin-name">{{ currentUser.name || 'Admin' }}</p>
+                                <p class="admin-name">{{ user?.name || 'Admin' }}</p>
                                 <a href="#" @click.prevent="logout" class="logout-btn">
                                     <i class="bi bi-box-arrow-right me-1"></i>Đăng xuất
                                 </a>
@@ -148,14 +148,9 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useAuth } from '../composables/useAuth.js'
 
-const router = useRouter()
-
-const currentUser = ref({
-    name: 'Admin User',
-    role: 'Administrator'
-})
+const { user, logout: authLogout } = useAuth()
 
 const expandedSections = ref({
     basic: true,
@@ -167,18 +162,12 @@ const toggleSection = (section) => {
     expandedSections.value[section] = !expandedSections.value[section]
 }
 
-const logout = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
-    router.push('/login')
+const logout = async () => {
+    await authLogout()
 }
 
 onMounted(() => {
-    // Load user info from localStorage
-    const userInfo = localStorage.getItem('user')
-    if (userInfo) {
-        currentUser.value = JSON.parse(userInfo)
-    }
+    // Auth state đã được quản lý bởi useAuth composable
 })
 </script>
 

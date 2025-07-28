@@ -7,12 +7,14 @@ import Dashboard from '../views/Dashboard.vue';
 import Sach from '../views/Sach.vue';
 import NhaXuatBan from '../views/NhaXuatBan.vue';
 import TheoDoiMuonSach from '../views/TheoDoiMuonSach.vue';
+import AuthTest from '../views/AuthTest.vue';
 import AdminLayout from '../layouts/AdminLayout.vue';
 
 const routes = [
   { path: '/', name: 'Home', component: Home },
   { path: '/login', name: 'Login', component: Login },
   { path: '/register', name: 'Register', component: Register },
+  { path: '/auth-test', name: 'AuthTest', component: AuthTest },
   
   // Admin routes with layout
   {
@@ -41,15 +43,47 @@ const router = createRouter({
 
 // Navigation guard for authentication
 router.beforeEach((to, from, next) => {
-  const isAuthenticated = localStorage.getItem('token');
+  const token = localStorage.getItem('token');
   
   // Public routes that don't require authentication
   const publicRoutes = ['/login', '/register', '/'];
   
-  if (!isAuthenticated && !publicRoutes.includes(to.path)) {
+  // Check if route requires authentication
+  const requiresAuth = !publicRoutes.includes(to.path);
+  
+  if (requiresAuth && !token) {
+    // Redirect to login if not authenticated
     next('/login');
+  } else if (!requiresAuth && token) {
+    // Redirect authenticated users away from login/register
+    if (to.path === '/login' || to.path === '/register') {
+      next('/admin');
+    } else {
+      next();
+    }
   } else {
-    next();
+    // Check token expiration for authenticated routes
+    if (token && requiresAuth) {
+      try {
+        // Simple token validation - just check if it exists and has 3 parts
+        const tokenParts = token.split('.');
+        if (tokenParts.length === 3) {
+          next();
+        } else {
+          // Invalid token format
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          next('/login');
+        }
+      } catch (error) {
+        // Invalid token, clear storage and redirect to login
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        next('/login');
+      }
+    } else {
+      next();
+    }
   }
 });
 

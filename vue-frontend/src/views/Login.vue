@@ -47,8 +47,10 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuth } from '../composables/useAuth.js'
 
 const router = useRouter()
+const { login } = useAuth()
 
 const loginForm = ref({
   username: '',
@@ -63,19 +65,14 @@ const handleLogin = async () => {
   error.value = ''
   
   try {
-    // TODO: Implement actual login API call
-    // For now, simulate login
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    const result = await login(loginForm.value)
     
-    // Mock successful login
-    localStorage.setItem('token', 'mock-jwt-token')
-    localStorage.setItem('user', JSON.stringify({
-      id: 1,
-      username: loginForm.value.username,
-      name: 'Admin User'
-    }))
-    
-    router.push('/admin')
+    if (result.success) {
+      // Chuyển hướng đến admin dashboard
+      router.push('/admin')
+    } else {
+      error.value = result.error
+    }
   } catch (err) {
     error.value = 'Đăng nhập thất bại. Vui lòng thử lại.'
   } finally {

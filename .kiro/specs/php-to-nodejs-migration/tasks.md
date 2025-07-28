@@ -69,7 +69,10 @@
   - Test hot reload và build process
   - _Requirements: 4.1, 4.3, 4.5_
 
-- [ ] 8. Implement authentication UI
+- [x] 8. Implement authentication UI
+
+
+
 
   - Tạo Login.vue component
   - Implement JWT token storage
