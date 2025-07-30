@@ -52,6 +52,9 @@ build/Release
 
 # Dependency directories
 jspm_packages/
+backend/package-lock.json
+frontend/package-lock.json
+
 
 # TypeScript cache
 *.tsbuildinfo

@@ -92,7 +92,7 @@
   - Test navigation và layout
   - _Requirements: 4.2, 7.2_
 
-- [ ] 10. Implement DocGia management UI
+- [x] 10. Implement DocGia management UI
 
   - Tạo DocGia.vue view với CRUD operations
   - Implement search và pagination
@@ -100,7 +100,7 @@
   - Test user interactions
   - _Requirements: 5.1_
 
-- [ ] 11. Implement Sach management UI
+- [x] 11. Implement Sach management UI
 
   - Tạo Sach.vue view với CRUD operations
   - Implement search và pagination
