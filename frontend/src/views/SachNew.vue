@@ -16,13 +16,9 @@
                   <span class="input-group-text">
                     <i class="bi bi-search"></i>
                   </span>
-                  <input 
-                    type="text" 
-                    class="form-control" 
-                    placeholder="Tìm kiếm theo mã sách, tên sách, tác giả, nhà xuất bản..."
-                    v-model="searchQuery"
-                    @input="handleSearch"
-                  >
+                  <input type="text" class="form-control"
+                    placeholder="Tìm kiếm theo mã sách, tên sách, tác giả, nhà xuất bản..." v-model="searchQuery"
+                    @input="handleSearch">
                   <button class="btn btn-outline-secondary" @click="clearSearch" v-if="searchQuery">
                     <i class="bi bi-x"></i>
                   </button>
@@ -34,7 +30,7 @@
                 </button>
               </div>
             </div>
-            
+
             <!-- Table Section -->
             <div class="table-responsive">
               <table class="table table-hover">
@@ -71,18 +67,10 @@
                     </td>
                     <td class="text-center">
                       <div class="btn-group" role="group">
-                        <button 
-                          class="btn btn-sm btn-outline-primary" 
-                          @click="editSach(sach)"
-                          title="Chỉnh sửa"
-                        >
+                        <button class="btn btn-sm btn-outline-primary" @click="editSach(sach)" title="Chỉnh sửa">
                           <i class="bi bi-pencil"></i>
                         </button>
-                        <button 
-                          class="btn btn-sm btn-outline-danger" 
-                          @click="confirmDelete(sach)"
-                          title="Xóa"
-                        >
+                        <button class="btn btn-sm btn-outline-danger" @click="confirmDelete(sach)" title="Xóa">
                           <i class="bi bi-trash"></i>
                         </button>
                       </div>
@@ -97,7 +85,7 @@
                 </tbody>
               </table>
             </div>
-            
+
             <!-- Loading State -->
             <div v-if="loading" class="text-center py-4">
               <div class="spinner-border text-primary" role="status">
@@ -105,7 +93,7 @@
               </div>
               <p class="mt-2 text-muted">Đang tải danh sách sách...</p>
             </div>
-            
+
             <!-- Pagination -->
             <div class="row mt-4" v-if="filteredSach.length > 0">
               <div class="col-md-6">
@@ -121,16 +109,13 @@
                         <i class="bi bi-chevron-left"></i>
                       </button>
                     </li>
-                    <li 
-                      class="page-item" 
-                      v-for="page in visiblePages" 
-                      :key="page"
-                      :class="{ active: page === currentPage }"
-                    >
+                    <li class="page-item" v-for="page in visiblePages" :key="page"
+                      :class="{ active: page === currentPage }">
                       <button class="page-link" @click="goToPage(page)">{{ page }}</button>
                     </li>
                     <li class="page-item" :class="{ disabled: currentPage === totalPages }">
-                      <button class="page-link" @click="goToPage(currentPage + 1)" :disabled="currentPage === totalPages">
+                      <button class="page-link" @click="goToPage(currentPage + 1)"
+                        :disabled="currentPage === totalPages">
                         <i class="bi bi-chevron-right"></i>
                       </button>
                     </li>
@@ -144,7 +129,8 @@
     </div>
 
     <!-- Add/Edit Modal -->
-    <div class="modal fade" :class="{ show: showModal }" :style="{ display: showModal ? 'block' : 'none' }" tabindex="-1">
+    <div class="modal fade" :class="{ show: showModal }" :style="{ display: showModal ? 'block' : 'none' }"
+      tabindex="-1">
       <div class="modal-dialog modal-lg">
         <div class="modal-content">
           <div class="modal-header">
@@ -161,64 +147,36 @@
                 <div class="col-md-6">
                   <div class="mb-3">
                     <label for="maSach" class="form-label">Mã sách <span class="text-danger">*</span></label>
-                    <input 
-                      type="text" 
-                      class="form-control" 
-                      id="maSach"
-                      v-model="formData.MaSach"
-                      :disabled="editingSach"
-                      :class="{ 'is-invalid': errors.MaSach }"
-                      placeholder="VD: S001"
-                    >
+                    <input type="text" class="form-control" id="maSach" v-model="formData.MaSach"
+                      :disabled="editingSach" :class="{ 'is-invalid': errors.MaSach }" placeholder="VD: S001">
                     <div class="invalid-feedback" v-if="errors.MaSach">{{ errors.MaSach }}</div>
                   </div>
                 </div>
                 <div class="col-md-6">
                   <div class="mb-3">
                     <label for="namXuatBan" class="form-label">Năm xuất bản <span class="text-danger">*</span></label>
-                    <input 
-                      type="number" 
-                      class="form-control" 
-                      id="namXuatBan"
-                      v-model="formData.NamXuatBan"
-                      :class="{ 'is-invalid': errors.NamXuatBan }"
-                      :min="1900"
-                      :max="currentYear"
-                      placeholder="VD: 2023"
-                    >
+                    <input type="number" class="form-control" id="namXuatBan" v-model="formData.NamXuatBan"
+                      :class="{ 'is-invalid': errors.NamXuatBan }" :min="1900" :max="currentYear"
+                      placeholder="VD: 2023">
                     <div class="invalid-feedback" v-if="errors.NamXuatBan">{{ errors.NamXuatBan }}</div>
                   </div>
                 </div>
               </div>
-              
+
               <div class="mb-3">
                 <label for="tenSach" class="form-label">Tên sách <span class="text-danger">*</span></label>
-                <input 
-                  type="text" 
-                  class="form-control" 
-                  id="tenSach"
-                  v-model="formData.TenSach"
-                  :class="{ 'is-invalid': errors.TenSach }"
-                  placeholder="VD: Lập trình JavaScript cơ bản"
-                >
+                <input type="text" class="form-control" id="tenSach" v-model="formData.TenSach"
+                  :class="{ 'is-invalid': errors.TenSach }" placeholder="VD: Lập trình JavaScript cơ bản">
                 <div class="invalid-feedback" v-if="errors.TenSach">{{ errors.TenSach }}</div>
               </div>
-              
+
               <div class="row">
                 <div class="col-md-6">
                   <div class="mb-3">
                     <label for="donGia" class="form-label">Đơn giá <span class="text-danger">*</span></label>
                     <div class="input-group">
-                      <input 
-                        type="number" 
-                        class="form-control" 
-                        id="donGia"
-                        v-model="formData.DonGia"
-                        :class="{ 'is-invalid': errors.DonGia }"
-                        min="0"
-                        step="1000"
-                        placeholder="150000"
-                      >
+                      <input type="number" class="form-control" id="donGia" v-model="formData.DonGia"
+                        :class="{ 'is-invalid': errors.DonGia }" min="0" step="1000" placeholder="150000">
                       <span class="input-group-text">VNĐ</span>
                     </div>
                     <div class="invalid-feedback" v-if="errors.DonGia">{{ errors.DonGia }}</div>
@@ -227,30 +185,19 @@
                 <div class="col-md-6">
                   <div class="mb-3">
                     <label for="soQuyen" class="form-label">Số quyển <span class="text-danger">*</span></label>
-                    <input 
-                      type="number" 
-                      class="form-control" 
-                      id="soQuyen"
-                      v-model="formData.SoQuyen"
-                      :class="{ 'is-invalid': errors.SoQuyen }"
-                      min="0"
-                      placeholder="10"
-                    >
+                    <input type="number" class="form-control" id="soQuyen" v-model="formData.SoQuyen"
+                      :class="{ 'is-invalid': errors.SoQuyen }" min="0" placeholder="10">
                     <div class="invalid-feedback" v-if="errors.SoQuyen">{{ errors.SoQuyen }}</div>
                   </div>
                 </div>
               </div>
-              
+
               <div class="row">
                 <div class="col-md-6">
                   <div class="mb-3">
                     <label for="nhaXuatBan" class="form-label">Nhà xuất bản <span class="text-danger">*</span></label>
-                    <select 
-                      class="form-select" 
-                      id="nhaXuatBan"
-                      v-model="formData.MaNhaXuatBan"
-                      :class="{ 'is-invalid': errors.MaNhaXuatBan }"
-                    >
+                    <select class="form-select" id="nhaXuatBan" v-model="formData.MaNhaXuatBan"
+                      :class="{ 'is-invalid': errors.MaNhaXuatBan }">
                       <option value="">Chọn nhà xuất bản</option>
                       <option v-for="nxb in nhaXuatBanList" :key="nxb.MaNhaXuatBan" :value="nxb.MaNhaXuatBan">
                         {{ nxb.TenNhaXuatBan }}
@@ -262,14 +209,8 @@
                 <div class="col-md-6">
                   <div class="mb-3">
                     <label for="nguonGoc" class="form-label">Tác giả <span class="text-danger">*</span></label>
-                    <input 
-                      type="text" 
-                      class="form-control" 
-                      id="nguonGoc"
-                      v-model="formData.NguonGoc"
-                      :class="{ 'is-invalid': errors.NguonGoc }"
-                      placeholder="VD: Nguyễn Văn A"
-                    >
+                    <input type="text" class="form-control" id="nguonGoc" v-model="formData.NguonGoc"
+                      :class="{ 'is-invalid': errors.NguonGoc }" placeholder="VD: Nguyễn Văn A">
                     <div class="invalid-feedback" v-if="errors.NguonGoc">{{ errors.NguonGoc }}</div>
                   </div>
                 </div>
@@ -291,7 +232,8 @@
     </div>
 
     <!-- Delete Confirmation Modal -->
-    <div class="modal fade" :class="{ show: showDeleteModal }" :style="{ display: showDeleteModal ? 'block' : 'none' }" tabindex="-1">
+    <div class="modal fade" :class="{ show: showDeleteModal }" :style="{ display: showDeleteModal ? 'block' : 'none' }"
+      tabindex="-1">
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
@@ -360,9 +302,9 @@ const errors = ref({})
 const filteredSach = computed(() => {
   if (!Array.isArray(sachList.value)) return []
   if (!searchQuery.value) return sachList.value
-  
+
   const query = searchQuery.value.toLowerCase().trim()
-  return sachList.value.filter(sach => 
+  return sachList.value.filter(sach =>
     sach.MaSach.toLowerCase().includes(query) ||
     sach.TenSach.toLowerCase().includes(query) ||
     sach.NguonGoc.toLowerCase().includes(query) ||
@@ -390,7 +332,7 @@ const visiblePages = computed(() => {
   const pages = []
   const start = Math.max(1, currentPage.value - 2)
   const end = Math.min(totalPages.value, currentPage.value + 2)
-  
+
   for (let i = start; i <= end; i++) {
     pages.push(i)
   }
@@ -402,7 +344,7 @@ const currentYear = computed(() => new Date().getFullYear())
 // Methods
 const loadSach = async () => {
   loading.value = true
-  
+
   // Mock data fallback
   const mockData = [
     {
@@ -456,12 +398,12 @@ const loadSach = async () => {
       NguonGoc: 'Hoàng Thị E'
     }
   ]
-  
+
   try {
     // Try to get data from API
     const response = await axios.get('/api/sach')
     const apiData = response.data.data?.sach || response.data.data || []
-    
+
     // Use API data if available and valid, otherwise use mock data
     if (Array.isArray(apiData) && apiData.length > 0) {
       sachList.value = apiData
@@ -491,11 +433,11 @@ const loadNhaXuatBan = async () => {
     { MaNhaXuatBan: 'NXB004', TenNhaXuatBan: 'NXB Văn học' },
     { MaNhaXuatBan: 'NXB005', TenNhaXuatBan: 'NXB Đại học Quốc gia' }
   ]
-  
+
   try {
     const response = await axios.get('/api/nhaxuatban')
     const apiData = response.data.data?.nhaxuatban || response.data.data || []
-    
+
     if (Array.isArray(apiData) && apiData.length > 0) {
       nhaXuatBanList.value = apiData
     } else {
@@ -556,7 +498,7 @@ const closeModal = () => {
 
 const validateForm = () => {
   errors.value = {}
-  
+
   if (!formData.value.MaSach.trim()) {
     errors.value.MaSach = 'Mã sách là bắt buộc'
   } else if (!/^S\d{3,}$/.test(formData.value.MaSach)) {
@@ -564,47 +506,47 @@ const validateForm = () => {
   } else if (!editingSach.value && Array.isArray(sachList.value) && sachList.value.some(s => s.MaSach === formData.value.MaSach)) {
     errors.value.MaSach = 'Mã sách đã tồn tại'
   }
-  
+
   if (!formData.value.TenSach.trim()) {
     errors.value.TenSach = 'Tên sách là bắt buộc'
   } else if (formData.value.TenSach.length > 200) {
     errors.value.TenSach = 'Tên sách không được quá 200 ký tự'
   }
-  
+
   if (!formData.value.DonGia || formData.value.DonGia <= 0) {
     errors.value.DonGia = 'Đơn giá phải lớn hơn 0'
   } else if (formData.value.DonGia > 10000000) {
     errors.value.DonGia = 'Đơn giá không được quá 10,000,000 VNĐ'
   }
-  
+
   if (!formData.value.SoQuyen || formData.value.SoQuyen < 0) {
     errors.value.SoQuyen = 'Số quyển phải lớn hơn hoặc bằng 0'
   } else if (formData.value.SoQuyen > 1000) {
     errors.value.SoQuyen = 'Số quyển không được quá 1000'
   }
-  
+
   if (!formData.value.NamXuatBan) {
     errors.value.NamXuatBan = 'Năm xuất bản là bắt buộc'
   } else if (formData.value.NamXuatBan < 1900 || formData.value.NamXuatBan > currentYear.value) {
     errors.value.NamXuatBan = `Năm xuất bản phải từ 1900 đến ${currentYear.value}`
   }
-  
+
   if (!formData.value.MaNhaXuatBan) {
     errors.value.MaNhaXuatBan = 'Nhà xuất bản là bắt buộc'
   }
-  
+
   if (!formData.value.NguonGoc.trim()) {
     errors.value.NguonGoc = 'Tác giả là bắt buộc'
   } else if (formData.value.NguonGoc.length > 100) {
     errors.value.NguonGoc = 'Tên tác giả không được quá 100 ký tự'
   }
-  
+
   return Object.keys(errors.value).length === 0
 }
 
 const saveSach = async () => {
   if (!validateForm()) return
-  
+
   saving.value = true
   try {
     // Add NhaXuatBan name for display
@@ -613,7 +555,7 @@ const saveSach = async () => {
       ...formData.value,
       NhaXuatBan: nxb?.TenNhaXuatBan || ''
     }
-    
+
     if (editingSach.value) {
       // Update existing
       await axios.put(`/api/sach/${editingSach.value.MaSach}`, sachData)
@@ -630,7 +572,7 @@ const saveSach = async () => {
         sachList.value.push({ ...sachData })
       }
     }
-    
+
     closeModal()
     console.log('Sách đã được lưu thành công')
   } catch (error) {
@@ -651,7 +593,7 @@ const confirmDelete = (sach) => {
 
 const deleteSach = async () => {
   if (!deletingSach.value) return
-  
+
   deleting.value = true
   try {
     await axios.delete(`/api/sach/${deletingSach.value.MaSach}`)
@@ -661,15 +603,15 @@ const deleteSach = async () => {
         sachList.value.splice(index, 1)
       }
     }
-    
+
     showDeleteModal.value = false
     deletingSach.value = null
-    
+
     // Adjust current page if needed
     if (paginatedSach.value.length === 0 && currentPage.value > 1) {
       currentPage.value--
     }
-    
+
     console.log('Sách đã được xóa thành công')
   } catch (error) {
     console.error('Error deleting sach:', error)
@@ -760,11 +702,11 @@ onMounted(() => {
   .table-responsive {
     font-size: 0.875rem;
   }
-  
+
   .btn-group .btn {
     padding: 0.125rem 0.25rem;
   }
-  
+
   .modal-dialog {
     margin: 0.5rem;
   }

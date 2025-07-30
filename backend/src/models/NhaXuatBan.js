@@ -1,90 +1,74 @@
 import mongoose from 'mongoose';
 
-const NhaXuatBanSchema = new mongoose.Schema({
-  MaNXB: { 
-    type: String, 
-    required: [true, 'Mã nhà xuất bản là bắt buộc'], 
+const nhaXuatBanSchema = new mongoose.Schema({
+  MaNhaXuatBan: {
+    type: String,
+    required: [true, 'Mã nhà xuất bản là bắt buộc'],
     unique: true,
     trim: true,
-    uppercase: true,
     match: [/^NXB\d{3,}$/, 'Mã nhà xuất bản phải có định dạng NXB001, NXB002, ...']
   },
-  TenNXB: { 
-    type: String, 
+  TenNhaXuatBan: {
+    type: String,
     required: [true, 'Tên nhà xuất bản là bắt buộc'],
     trim: true,
-    maxlength: [100, 'Tên nhà xuất bản không được vượt quá 100 ký tự']
+    maxLength: [100, 'Tên nhà xuất bản không được quá 100 ký tự']
   },
-  DiaChi: { 
-    type: String, 
+  DiaChi: {
+    type: String,
     required: [true, 'Địa chỉ là bắt buộc'],
     trim: true,
-    maxlength: [200, 'Địa chỉ không được vượt quá 200 ký tự']
+    maxLength: [200, 'Địa chỉ không được quá 200 ký tự']
   },
   DienThoai: {
     type: String,
     trim: true,
     match: [/^(0|\+84)[0-9]{9,10}$/, 'Số điện thoại không hợp lệ']
-  },
-  Email: {
-    type: String,
-    trim: true,
-    lowercase: true,
-    match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Email không hợp lệ']
-  },
-  Website: {
-    type: String,
-    trim: true,
-    match: [/^https?:\/\/.+/, 'Website phải bắt đầu bằng http:// hoặc https://']
-  },
-  TrangThai: {
-    type: String,
-    enum: {
-      values: ['Hoạt động', 'Tạm dừng', 'Ngừng hợp tác'],
-      message: 'Trạng thái không hợp lệ'
-    },
-    default: 'Hoạt động'
   }
 }, {
   timestamps: true,
-  collection: 'nhaxuatbans'
+  collection: 'nhaxuatban'
 });
 
-// Indexes for better performance (MaNXB unique index is auto-created)
-NhaXuatBanSchema.index({ TenNXB: 'text' });
-NhaXuatBanSchema.index({ TrangThai: 1 });
+// Indexes for search performance
+nhaXuatBanSchema.index({ MaNhaXuatBan: 1 });
+nhaXuatBanSchema.index({ TenNhaXuatBan: 'text', DiaChi: 'text' });
 
-// Virtual for contact info
-NhaXuatBanSchema.virtual('ThongTinLienHe').get(function() {
-  const contact = [];
-  if (this.DienThoai) contact.push(`Tel: ${this.DienThoai}`);
-  if (this.Email) contact.push(`Email: ${this.Email}`);
-  if (this.Website) contact.push(`Web: ${this.Website}`);
-  return contact.join(' | ');
+// Virtual for book count
+nhaXuatBanSchema.virtual('SoSach', {
+  ref: 'Sach',
+  localField: 'MaNhaXuatBan',
+  foreignField: 'MaNhaXuatBan',
+  count: true
 });
 
-// Ensure virtual fields are serialized
-NhaXuatBanSchema.set('toJSON', { virtuals: true });
-NhaXuatBanSchema.set('toObject', { virtuals: true });
+// Static method for search
+nhaXuatBanSchema.statics.search = function(query) {
+  const searchRegex = new RegExp(query.trim(), 'i');
+  return this.find({
+    $or: [
+      { MaNhaXuatBan: searchRegex },
+      { TenNhaXuatBan: searchRegex },
+      { DiaChi: searchRegex }
+    ]
+  });
+};
 
-// Pre-save middleware
-NhaXuatBanSchema.pre('save', function(next) {
-  // Capitalize publisher name
-  if (this.TenNXB) {
-    this.TenNXB = this.TenNXB.replace(/\b\w/g, l => l.toUpperCase());
+// Method to get books by this publisher
+nhaXuatBanSchema.methods.getBooks = function() {
+  return mongoose.model('Sach').find({ MaNhaXuatBan: this.MaNhaXuatBan });
+};
+
+// Pre-remove hook to check if publisher has books
+nhaXuatBanSchema.pre('findOneAndDelete', async function() {
+  const doc = await this.model.findOne(this.getQuery());
+  if (doc) {
+    const Sach = mongoose.model('Sach');
+    const bookCount = await Sach.countDocuments({ MaNhaXuatBan: doc.MaNhaXuatBan });
+    if (bookCount > 0) {
+      throw new Error(`Không thể xóa nhà xuất bản có ${bookCount} sách`);
+    }
   }
-  next();
 });
 
-// Static method to find active publishers
-NhaXuatBanSchema.statics.findActive = function() {
-  return this.find({ TrangThai: 'Hoạt động' });
-};
-
-// Instance method to get book count
-NhaXuatBanSchema.methods.getBookCount = async function() {
-  const Sach = mongoose.model('Sach');
-  return await Sach.countDocuments({ MaNXB: this._id });
-};
-
-export default mongoose.model('NhaXuatBan', NhaXuatBanSchema);
+export default mongoose.model('NhaXuatBan', nhaXuatBanSchema);

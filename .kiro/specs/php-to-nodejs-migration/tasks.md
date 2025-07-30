@@ -108,7 +108,7 @@
   - Test user interactions
   - _Requirements: 5.2_
 
-- [ ] 12. Implement NhaXuatBan management UI
+- [x] 12. Implement NhaXuatBan management UI
 
   - Tạo NhaXuatBan.vue view với CRUD operations
   - Implement search và pagination

@@ -8,6 +8,7 @@ import Dashboard from '../views/Dashboard.vue';
 import Sach from '../views/Sach.vue';
 import SachNew from '../views/SachNew.vue';
 import NhaXuatBan from '../views/NhaXuatBan.vue';
+import NhaXuatBanNew from '../views/NhaXuatBanNew.vue';
 import TheoDoiMuonSach from '../views/TheoDoiMuonSach.vue';
 import AdminLayout from '../layouts/AdminLayout.vue';
 
@@ -24,7 +25,7 @@ const routes = [
       { path: '', name: 'Dashboard', component: Dashboard },
       { path: 'docgia', name: 'DocGia', component: DocGia },
       { path: 'sach', name: 'Sach', component: SachNew },
-      { path: 'nhaxuatban', name: 'NhaXuatBan', component: NhaXuatBan },
+      { path: 'nhaxuatban', name: 'NhaXuatBan', component: NhaXuatBanNew },
       { path: 'users', name: 'UserList', component: UserList },
       { path: 'theodoimuonsach', name: 'TheoDoiMuonSach', component: TheoDoiMuonSach },
       { path: 'thongke', name: 'ThongKe', component: Dashboard },
