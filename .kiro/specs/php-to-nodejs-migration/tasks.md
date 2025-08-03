@@ -119,7 +119,7 @@
   - Test dashboard data loading và responsive
   - _Requirements: 5.5_
 
-- [ ] 15. Implement reusable components
+- [x] 15. Implement reusable components
 
   - Tạo Sidebar.vue component với collapse menu
   - Tạo DataTable.vue component với styling giống PHP

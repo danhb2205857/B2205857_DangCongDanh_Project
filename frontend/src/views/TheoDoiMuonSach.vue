@@ -1,159 +1,48 @@
 <template>
   <div class="container-fluid">
-    <div class="row">
-      <div class="col-12">
-        <div class="card shadow">
-          <div class="card-header py-3">
-            <h5 class="card-title mb-0 text-primary font-weight-bold">
-              <i class="bi bi-journal-bookmark me-2"></i>Quản lý mượn trả sách
-            </h5>
-          </div>
-          <div class="card-body">
-            <!-- Search and Add Section -->
-            <div class="row mb-4">
-              <div class="col-md-6">
-                <div class="input-group">
-                  <span class="input-group-text">
-                    <i class="bi bi-search"></i>
-                  </span>
-                  <input type="text" class="form-control"
-                    placeholder="Tìm kiếm theo mã, độc giả, sách..." v-model="searchQuery"
-                    @input="handleSearch">
-                  <button class="btn btn-outline-secondary" @click="clearSearch" v-if="searchQuery">
-                    <i class="bi bi-x"></i>
-                  </button>
-                </div>
-              </div>
-              <div class="col-md-3">
-                <select class="form-select" v-model="statusFilter" @change="handleSearch">
-                  <option value="">Tất cả trạng thái</option>
-                  <option value="Đang mượn">Đang mượn</option>
-                  <option value="Đã trả">Đã trả</option>
-                  <option value="Quá hạn">Quá hạn</option>
-                </select>
-              </div>
-              <div class="col-md-3 text-end">
-                <button class="btn btn-primary" @click="showBorrowModal">
-                  <i class="bi bi-plus-circle me-2"></i>Mượn sách
-                </button>
-              </div>
-            </div>
-
-            <!-- Table Section -->
-            <div class="table-responsive">
-              <table class="table table-hover">
-                <thead class="table-light">
-                  <tr>
-                    <th style="width: 100px;">Mã TD</th>
-                    <th style="width: 150px;">Độc giả</th>
-                    <th style="width: 200px;">Sách</th>
-                    <th style="width: 120px;">Ngày mượn</th>
-                    <th style="width: 120px;">Hẹn trả</th>
-                    <th style="width: 120px;">Ngày trả</th>
-                    <th style="width: 100px;">Trạng thái</th>
-                    <th style="width: 150px;" class="text-center">Thao tác</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="record in paginatedRecords" :key="record.MaTheoDoiMuonSach">
-                    <td>
-                      <span class="badge bg-info">{{ record.MaTheoDoiMuonSach }}</span>
-                    </td>
-                    <td>
-                      <div class="fw-bold">{{ getReaderName(record) }}</div>
-                      <small class="text-muted">{{ record.MaDocGia }}</small>
-                    </td>
-                    <td>
-                      <div class="fw-bold text-truncate" style="max-width: 180px;" :title="getBookTitle(record)">
-                        {{ getBookTitle(record) }}
-                      </div>
-                      <small class="text-muted">{{ record.MaSach }}</small>
-                    </td>
-                    <td>{{ formatDate(record.NgayMuon) }}</td>
-                    <td>
-                      <span :class="getDueDateClass(record)">
-                        {{ formatDate(record.NgayHenTra) }}
-                      </span>
-                    </td>
-                    <td>{{ record.NgayTra ? formatDate(record.NgayTra) : '-' }}</td>
-                    <td>
-                      <span class="badge" :class="getStatusClass(record.TrangThai)">
-                        {{ record.TrangThai }}
-                      </span>
-                    </td>
-                    <td class="text-center">
-                      <div class="btn-group" role="group">
-                        <button v-if="record.TrangThai !== 'Đã trả'" 
-                          class="btn btn-sm btn-outline-success" 
-                          @click="showReturnModal(record)" 
-                          title="Trả sách">
-                          <i class="bi bi-check-circle"></i>
-                        </button>
-                        <button v-if="record.TrangThai !== 'Đã trả'" 
-                          class="btn btn-sm btn-outline-warning" 
-                          @click="showExtendModal(record)" 
-                          title="Gia hạn">
-                          <i class="bi bi-calendar-plus"></i>
-                        </button>
-                        <button class="btn btn-sm btn-outline-info" 
-                          @click="viewDetails(record)" 
-                          title="Chi tiết">
-                          <i class="bi bi-eye"></i>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                  <tr v-if="filteredRecords.length === 0 && !loading">
-                    <td colspan="8" class="text-center text-muted py-4">
-                      <i class="bi bi-inbox display-4 d-block mb-2"></i>
-                      {{ searchQuery ? 'Không tìm thấy bản ghi nào' : 'Chưa có bản ghi mượn sách nào' }}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <!-- Loading State -->
-            <div v-if="loading" class="text-center py-4">
-              <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Đang tải...</span>
-              </div>
-              <p class="mt-2 text-muted">Đang tải danh sách mượn trả sách...</p>
-            </div>
-
-            <!-- Pagination -->
-            <div class="row mt-4" v-if="filteredRecords.length > 0">
-              <div class="col-md-6">
-                <p class="text-muted">
-                  Hiển thị {{ startIndex + 1 }} - {{ endIndex }} trong tổng số {{ filteredRecords.length }} bản ghi
-                </p>
-              </div>
-              <div class="col-md-6">
-                <nav aria-label="Pagination">
-                  <ul class="pagination justify-content-end mb-0">
-                    <li class="page-item" :class="{ disabled: currentPage === 1 }">
-                      <button class="page-link" @click="goToPage(currentPage - 1)" :disabled="currentPage === 1">
-                        <i class="bi bi-chevron-left"></i>
-                      </button>
-                    </li>
-                    <li class="page-item" v-for="page in visiblePages" :key="page"
-                      :class="{ active: page === currentPage }">
-                      <button class="page-link" @click="goToPage(page)">{{ page }}</button>
-                    </li>
-                    <li class="page-item" :class="{ disabled: currentPage === totalPages }">
-                      <button class="page-link" @click="goToPage(currentPage + 1)"
-                        :disabled="currentPage === totalPages">
-                        <i class="bi bi-chevron-right"></i>
-                      </button>
-                    </li>
-                  </ul>
-                </nav>
-              </div>
-            </div>
-          </div>
+    <DataTable
+      title="Quản lý mượn trả sách"
+      :data="filteredRecords"
+      :columns="columns"
+      :loading="loading"
+      :searchable="true"
+      search-placeholder="Tìm kiếm theo mã, độc giả, sách..."
+      :actions="['view', 'edit', 'delete']"
+      @search="handleSearch"
+      @action="handleAction"
+    >
+      <template #actions>
+        <div class="d-flex gap-2">
+          <select class="form-select form-select-sm" v-model="statusFilter" @change="handleStatusFilter">
+            <option value="">Tất cả trạng thái</option>
+            <option value="Đang mượn">Đang mượn</option>
+            <option value="Đã trả">Đã trả</option>
+            <option value="Quá hạn">Quá hạn</option>
+          </select>
+          <button class="btn btn-primary" @click="showBorrowModal">
+            <i class="bi bi-plus-circle me-2"></i>Mượn sách
+          </button>
         </div>
-      </div>
-    </div>
+      </template>
+
+      <template #column-TrangThai="{ value }">
+        <span :class="getStatusBadgeClass(value)">{{ value }}</span>
+      </template>
+
+      <template #column-NgayMuon="{ value }">
+        {{ formatDate(value) }}
+      </template>
+
+      <template #column-NgayHenTra="{ value }">
+        {{ formatDate(value) }}
+      </template>
+
+      <template #column-NgayTra="{ value }">
+        {{ value ? formatDate(value) : '-' }}
+      </template>
+    </DataTable>
+
+
 
     <!-- Borrow Modal -->
     <div class="modal fade" :class="{ show: showBorrowModalState }" :style="{ display: showBorrowModalState ? 'block' : 'none' }"
@@ -334,7 +223,9 @@
 </template>
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import axios from 'axios'
+import api from '../utils/axios.js'
+import DataTable from '../components/DataTable.vue'
+import Modal from '../components/Modal.vue'
 
 // Reactive data
 const recordsList = ref([])
@@ -379,6 +270,71 @@ const extendForm = ref({
 const borrowErrors = ref({})
 const returnErrors = ref({})
 const extendErrors = ref({})
+
+// Table columns
+const columns = ref([
+  {
+    key: 'MaTheoDoiMuonSach',
+    title: 'Mã theo dõi',
+    sortable: true,
+    width: '120px'
+  },
+  {
+    key: 'DocGia',
+    title: 'Độc giả',
+    sortable: true,
+    formatter: (value, item) => {
+      if (typeof value === 'object' && value !== null) {
+        return `${value.HoLot} ${value.Ten}`.trim()
+      }
+      return value || '-'
+    }
+  },
+  {
+    key: 'Sach',
+    title: 'Sách',
+    sortable: true,
+    formatter: (value, item) => {
+      if (typeof value === 'object' && value !== null) {
+        return value.TenSach || '-'
+      }
+      return value || '-'
+    }
+  },
+  {
+    key: 'NgayMuon',
+    title: 'Ngày mượn',
+    type: 'date',
+    sortable: true,
+    width: '120px'
+  },
+  {
+    key: 'NgayHenTra',
+    title: 'Ngày hẹn trả',
+    type: 'date',
+    sortable: true,
+    width: '120px'
+  },
+  {
+    key: 'NgayTra',
+    title: 'Ngày trả',
+    type: 'date',
+    sortable: true,
+    width: '120px'
+  },
+  {
+    key: 'TrangThai',
+    title: 'Trạng thái',
+    type: 'badge',
+    sortable: true,
+    width: '120px',
+    badgeMap: {
+      'Đang mượn': 'badge-info',
+      'Đã trả': 'badge-success',
+      'Quá hạn': 'badge-danger'
+    }
+  }
+])
 
 // Computed properties
 const filteredRecords = computed(() => {
@@ -494,7 +450,7 @@ const loadRecords = async () => {
   ]
 
   try {
-    const response = await axios.get('/api/theodoimuonsach')
+    const response = await api.get('/theodoimuonsach')
     const apiData = response.data.data?.theodoimuonsach || response.data.data || []
 
     if (Array.isArray(apiData) && apiData.length > 0) {
@@ -525,7 +481,7 @@ const loadDocGia = async () => {
   ]
 
   try {
-    const response = await axios.get('/api/docgia')
+    const response = await api.get('/docgia')
     const apiData = response.data.data?.docgia || response.data.data || []
     
     if (Array.isArray(apiData) && apiData.length > 0) {
@@ -549,7 +505,7 @@ const loadSach = async () => {
   ]
 
   try {
-    const response = await axios.get('/api/sach/available')
+    const response = await api.get('/sach/available')
     const apiData = response.data.data?.sach || response.data.data || []
     
     if (Array.isArray(apiData) && apiData.length > 0) {
@@ -563,8 +519,55 @@ const loadSach = async () => {
   }
 }
 
-const handleSearch = () => {
+const handleSearch = (query) => {
+  searchQuery.value = query
   currentPage.value = 1
+}
+
+const handleStatusFilter = () => {
+  currentPage.value = 1
+}
+
+const handleAction = ({ action, item }) => {
+  switch (action) {
+    case 'view':
+      viewRecord(item)
+      break
+    case 'edit':
+      editRecord(item)
+      break
+    case 'delete':
+      // For borrow records, we don't delete but return books
+      if (item.TrangThai === 'Đang mượn') {
+        showReturnModal(item)
+      }
+      break
+  }
+}
+
+const viewRecord = (record) => {
+  // For now, just edit the record. Later can implement a view-only modal
+  editRecord(record)
+}
+
+const editRecord = (record) => {
+  if (record.TrangThai === 'Đang mượn') {
+    showExtendModal(record)
+  }
+}
+
+const formatDate = (dateString) => {
+  if (!dateString) return '-'
+  return new Date(dateString).toLocaleDateString('vi-VN')
+}
+
+const getStatusBadgeClass = (status) => {
+  const classes = {
+    'Đang mượn': 'badge badge-info',
+    'Đã trả': 'badge badge-success',
+    'Quá hạn': 'badge badge-danger'
+  }
+  return classes[status] || 'badge badge-secondary'
 }
 
 const clearSearch = () => {
@@ -598,11 +601,7 @@ const getBookTitle = (record) => {
   return sach ? sach.TenSach : record.MaSach
 }
 
-const formatDate = (dateString) => {
-  if (!dateString) return '-'
-  const date = new Date(dateString)
-  return date.toLocaleDateString('vi-VN')
-}
+
 
 const getDueDateClass = (record) => {
   if (record.TrangThai === 'Đã trả') return ''
@@ -682,7 +681,7 @@ const borrowBook = async () => {
 
   borrowing.value = true
   try {
-    await axios.post('/api/theodoimuonsach/muon', borrowForm.value)
+    await api.post('/theodoimuonsach/muon', borrowForm.value)
     closeBorrowModal()
     await loadRecords()
     console.log('Mượn sách thành công')
@@ -728,7 +727,7 @@ const returnBook = async () => {
 
   returning.value = true
   try {
-    await axios.put(`/api/theodoimuonsach/${returningRecord.value.MaTheoDoiMuonSach}/tra`, returnForm.value)
+    await api.put(`/theodoimuonsach/${returningRecord.value.MaTheoDoiMuonSach}/tra`, returnForm.value)
     closeReturnModal()
     await loadRecords()
     console.log('Trả sách thành công')
@@ -780,7 +779,7 @@ const extendDueDate = async () => {
 
   extending.value = true
   try {
-    await axios.put(`/api/theodoimuonsach/${extendingRecord.value.MaTheoDoiMuonSach}/giahan`, extendForm.value)
+    await api.put(`/theodoimuonsach/${extendingRecord.value.MaTheoDoiMuonSach}/giahan`, extendForm.value)
     closeExtendModal()
     await loadRecords()
     console.log('Gia hạn sách thành công')

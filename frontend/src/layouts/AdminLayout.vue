@@ -5,7 +5,7 @@
 
         <div class="layout-container">
             <!-- Sidebar -->
-            <Sidebar />
+            <Sidebar v-model="sidebarCollapsed" @nav-click="handleNavClick" />
 
             <!-- Main Content -->
             <main class="main-content" :class="{ 'sidebar-collapsed': sidebarCollapsed }">
@@ -27,6 +27,14 @@ import Sidebar from '../components/Sidebar.vue'
 import Footer from '../components/Footer.vue'
 
 const sidebarCollapsed = ref(false)
+
+const handleNavClick = () => {
+    // Handle navigation click if needed
+    // For mobile, might want to close sidebar
+    if (window.innerWidth <= 768) {
+        sidebarCollapsed.value = true
+    }
+}
 
 onMounted(() => {
     // Initialize sidebar state

@@ -1,272 +1,117 @@
 <template>
   <div class="container-fluid">
-    <div class="row">
-      <div class="col-12">
-        <div class="card shadow">
-          <div class="card-header py-3">
-            <h5 class="card-title mb-0 text-primary font-weight-bold">
-              <i class="bi bi-book me-2"></i>Quản lý sách
-            </h5>
-          </div>
-          <div class="card-body">
-            <!-- Search and Add Section -->
-            <div class="row mb-4">
-              <div class="col-md-8">
-                <div class="input-group">
-                  <span class="input-group-text">
-                    <i class="bi bi-search"></i>
-                  </span>
-                  <input type="text" class="form-control"
-                    placeholder="Tìm kiếm theo mã sách, tên sách, tác giả, nhà xuất bản..." v-model="searchQuery"
-                    @input="handleSearch">
-                  <button class="btn btn-outline-secondary" @click="clearSearch" v-if="searchQuery">
-                    <i class="bi bi-x"></i>
-                  </button>
-                </div>
-              </div>
-              <div class="col-md-4 text-end">
-                <button class="btn btn-primary" @click="showAddModal">
-                  <i class="bi bi-plus-circle me-2"></i>Thêm sách
-                </button>
-              </div>
-            </div>
+    <DataTable title="Quản lý sách" :data="sachList" :columns="columns" :loading="loading" :searchable="true"
+      search-placeholder="Tìm kiếm theo mã sách, tên sách, tác giả, nhà xuất bản..."
+      :actions="['view', 'edit', 'delete']" @search="handleSearch" @action="handleAction">
+      <template #actions>
+        <button class="btn btn-primary" @click="showAddModal">
+          <i class="bi bi-plus-circle me-2"></i>Thêm sách
+        </button>
+      </template>
 
-            <!-- Table Section -->
-            <div class="table-responsive">
-              <table class="table table-hover">
-                <thead class="table-light">
-                  <tr>
-                    <th style="width: 100px;">Mã sách</th>
-                    <th>Tên sách</th>
-                    <th style="width: 120px;">Đơn giá</th>
-                    <th style="width: 100px;">Số quyển</th>
-                    <th style="width: 100px;">Năm XB</th>
-                    <th style="width: 150px;">Nhà XB</th>
-                    <th style="width: 150px;">Tác giả</th>
-                    <th style="width: 120px;" class="text-center">Thao tác</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="sach in paginatedSach" :key="sach.MaSach">
-                    <td>
-                      <span class="badge bg-success">{{ sach.MaSach }}</span>
-                    </td>
-                    <td class="fw-bold">{{ sach.TenSach }}</td>
-                    <td class="text-end">{{ formatCurrency(sach.DonGia) }}</td>
-                    <td class="text-center">
-                      <span class="badge" :class="sach.SoQuyen > 0 ? 'bg-primary' : 'bg-danger'">
-                        {{ sach.SoQuyen }}
-                      </span>
-                    </td>
-                    <td class="text-center">{{ sach.NamXuatBan }}</td>
-                    <td class="text-truncate" style="max-width: 150px;" :title="sach.NhaXuatBan">
-                      {{ sach.NhaXuatBan }}
-                    </td>
-                    <td class="text-truncate" style="max-width: 150px;" :title="sach.NguonGoc">
-                      {{ sach.NguonGoc }}
-                    </td>
-                    <td class="text-center">
-                      <div class="btn-group" role="group">
-                        <button class="btn btn-sm btn-outline-primary" @click="editSach(sach)" title="Chỉnh sửa">
-                          <i class="bi bi-pencil"></i>
-                        </button>
-                        <button class="btn btn-sm btn-outline-danger" @click="confirmDelete(sach)" title="Xóa">
-                          <i class="bi bi-trash"></i>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                  <tr v-if="filteredSach.length === 0 && !loading">
-                    <td colspan="8" class="text-center text-muted py-4">
-                      <i class="bi bi-inbox display-4 d-block mb-2"></i>
-                      {{ searchQuery ? 'Không tìm thấy sách nào' : 'Chưa có sách nào' }}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+      <template #column-DonGia="{ value }">
+        <span class="text-success fw-bold">{{ formatCurrency(value) }}</span>
+      </template>
 
-            <!-- Loading State -->
-            <div v-if="loading" class="text-center py-4">
-              <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Đang tải...</span>
-              </div>
-              <p class="mt-2 text-muted">Đang tải danh sách sách...</p>
-            </div>
-
-            <!-- Pagination -->
-            <div class="row mt-4" v-if="filteredSach.length > 0">
-              <div class="col-md-6">
-                <p class="text-muted">
-                  Hiển thị {{ startIndex + 1 }} - {{ endIndex }} trong tổng số {{ filteredSach.length }} sách
-                </p>
-              </div>
-              <div class="col-md-6">
-                <nav aria-label="Pagination">
-                  <ul class="pagination justify-content-end mb-0">
-                    <li class="page-item" :class="{ disabled: currentPage === 1 }">
-                      <button class="page-link" @click="goToPage(currentPage - 1)" :disabled="currentPage === 1">
-                        <i class="bi bi-chevron-left"></i>
-                      </button>
-                    </li>
-                    <li class="page-item" v-for="page in visiblePages" :key="page"
-                      :class="{ active: page === currentPage }">
-                      <button class="page-link" @click="goToPage(page)">{{ page }}</button>
-                    </li>
-                    <li class="page-item" :class="{ disabled: currentPage === totalPages }">
-                      <button class="page-link" @click="goToPage(currentPage + 1)"
-                        :disabled="currentPage === totalPages">
-                        <i class="bi bi-chevron-right"></i>
-                      </button>
-                    </li>
-                  </ul>
-                </nav>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+      <template #column-SoQuyen="{ value }">
+        <span :class="value > 0 ? 'text-success' : 'text-danger'">{{ value }}</span>
+      </template>
+    </DataTable>
 
     <!-- Add/Edit Modal -->
-    <div class="modal fade" :class="{ show: showModal }" :style="{ display: showModal ? 'block' : 'none' }"
-      tabindex="-1">
-      <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">
-              <i class="bi bi-book-half me-2" v-if="!editingSach"></i>
-              <i class="bi bi-pencil-square me-2" v-else></i>
-              {{ editingSach ? 'Chỉnh sửa sách' : 'Thêm sách mới' }}
-            </h5>
-            <button type="button" class="btn-close" @click="closeModal"></button>
+    <Modal :show="showModal" :title="editingSach ? 'Chỉnh sửa sách' : 'Thêm sách mới'"
+      :icon="editingSach ? 'bi bi-pencil-square' : 'bi bi-book-half'" size="lg" :loading="saving"
+      loading-text="Đang lưu..." confirm-text="Lưu" cancel-text="Hủy" @close="closeModal" @confirm="saveSach"
+      @cancel="closeModal">
+      <form @submit.prevent="saveSach">
+        <div class="row">
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="maSach" class="form-label">Mã sách <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="maSach" v-model="formData.MaSach" :disabled="editingSach"
+                :class="{ 'is-invalid': errors.MaSach }" placeholder="VD: S001">
+              <div class="invalid-feedback" v-if="errors.MaSach">{{ errors.MaSach }}</div>
+            </div>
           </div>
-          <div class="modal-body">
-            <form @submit.prevent="saveSach">
-              <div class="row">
-                <div class="col-md-6">
-                  <div class="mb-3">
-                    <label for="maSach" class="form-label">Mã sách <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control" id="maSach" v-model="formData.MaSach"
-                      :disabled="editingSach" :class="{ 'is-invalid': errors.MaSach }" placeholder="VD: S001">
-                    <div class="invalid-feedback" v-if="errors.MaSach">{{ errors.MaSach }}</div>
-                  </div>
-                </div>
-                <div class="col-md-6">
-                  <div class="mb-3">
-                    <label for="namXuatBan" class="form-label">Năm xuất bản <span class="text-danger">*</span></label>
-                    <input type="number" class="form-control" id="namXuatBan" v-model="formData.NamXuatBan"
-                      :class="{ 'is-invalid': errors.NamXuatBan }" :min="1900" :max="currentYear"
-                      placeholder="VD: 2023">
-                    <div class="invalid-feedback" v-if="errors.NamXuatBan">{{ errors.NamXuatBan }}</div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="mb-3">
-                <label for="tenSach" class="form-label">Tên sách <span class="text-danger">*</span></label>
-                <input type="text" class="form-control" id="tenSach" v-model="formData.TenSach"
-                  :class="{ 'is-invalid': errors.TenSach }" placeholder="VD: Lập trình JavaScript cơ bản">
-                <div class="invalid-feedback" v-if="errors.TenSach">{{ errors.TenSach }}</div>
-              </div>
-
-              <div class="row">
-                <div class="col-md-6">
-                  <div class="mb-3">
-                    <label for="donGia" class="form-label">Đơn giá <span class="text-danger">*</span></label>
-                    <div class="input-group">
-                      <input type="number" class="form-control" id="donGia" v-model="formData.DonGia"
-                        :class="{ 'is-invalid': errors.DonGia }" min="0" step="1000" placeholder="150000">
-                      <span class="input-group-text">VNĐ</span>
-                    </div>
-                    <div class="invalid-feedback" v-if="errors.DonGia">{{ errors.DonGia }}</div>
-                  </div>
-                </div>
-                <div class="col-md-6">
-                  <div class="mb-3">
-                    <label for="soQuyen" class="form-label">Số quyển <span class="text-danger">*</span></label>
-                    <input type="number" class="form-control" id="soQuyen" v-model="formData.SoQuyen"
-                      :class="{ 'is-invalid': errors.SoQuyen }" min="0" placeholder="10">
-                    <div class="invalid-feedback" v-if="errors.SoQuyen">{{ errors.SoQuyen }}</div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="row">
-                <div class="col-md-6">
-                  <div class="mb-3">
-                    <label for="nhaXuatBan" class="form-label">Nhà xuất bản <span class="text-danger">*</span></label>
-                    <select class="form-select" id="nhaXuatBan" v-model="formData.MaNhaXuatBan"
-                      :class="{ 'is-invalid': errors.MaNhaXuatBan }">
-                      <option value="">Chọn nhà xuất bản</option>
-                      <option v-for="nxb in nhaXuatBanList" :key="nxb.MaNhaXuatBan" :value="nxb.MaNhaXuatBan">
-                        {{ nxb.TenNhaXuatBan }}
-                      </option>
-                    </select>
-                    <div class="invalid-feedback" v-if="errors.MaNhaXuatBan">{{ errors.MaNhaXuatBan }}</div>
-                  </div>
-                </div>
-                <div class="col-md-6">
-                  <div class="mb-3">
-                    <label for="nguonGoc" class="form-label">Tác giả <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control" id="nguonGoc" v-model="formData.NguonGoc"
-                      :class="{ 'is-invalid': errors.NguonGoc }" placeholder="VD: Nguyễn Văn A">
-                    <div class="invalid-feedback" v-if="errors.NguonGoc">{{ errors.NguonGoc }}</div>
-                  </div>
-                </div>
-              </div>
-            </form>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" @click="closeModal">
-              <i class="bi bi-x-circle me-2"></i>Hủy
-            </button>
-            <button type="button" class="btn btn-primary" @click="saveSach" :disabled="saving">
-              <span v-if="saving" class="spinner-border spinner-border-sm me-2"></span>
-              <i class="bi bi-check-circle me-2" v-else></i>
-              {{ editingSach ? 'Cập nhật' : 'Thêm mới' }}
-            </button>
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="namXuatBan" class="form-label">Năm xuất bản <span class="text-danger">*</span></label>
+              <input type="number" class="form-control" id="namXuatBan" v-model="formData.NamXuatBan"
+                :class="{ 'is-invalid': errors.NamXuatBan }" :min="1900" :max="currentYear" placeholder="VD: 2023">
+              <div class="invalid-feedback" v-if="errors.NamXuatBan">{{ errors.NamXuatBan }}</div>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
+
+        <div class="mb-3">
+          <label for="tenSach" class="form-label">Tên sách <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" id="tenSach" v-model="formData.TenSach"
+            :class="{ 'is-invalid': errors.TenSach }" placeholder="VD: Lập trình JavaScript cơ bản">
+          <div class="invalid-feedback" v-if="errors.TenSach">{{ errors.TenSach }}</div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="donGia" class="form-label">Đơn giá <span class="text-danger">*</span></label>
+              <div class="input-group">
+                <input type="number" class="form-control" id="donGia" v-model="formData.DonGia"
+                  :class="{ 'is-invalid': errors.DonGia }" min="0" step="1000" placeholder="150000">
+                <span class="input-group-text">VNĐ</span>
+              </div>
+              <div class="invalid-feedback" v-if="errors.DonGia">{{ errors.DonGia }}</div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="soQuyen" class="form-label">Số quyển <span class="text-danger">*</span></label>
+              <input type="number" class="form-control" id="soQuyen" v-model="formData.SoQuyen"
+                :class="{ 'is-invalid': errors.SoQuyen }" min="0" placeholder="10">
+              <div class="invalid-feedback" v-if="errors.SoQuyen">{{ errors.SoQuyen }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="nhaXuatBan" class="form-label">Nhà xuất bản <span class="text-danger">*</span></label>
+              <select class="form-select" id="nhaXuatBan" v-model="formData.MaNhaXuatBan"
+                :class="{ 'is-invalid': errors.MaNhaXuatBan }">
+                <option value="">Chọn nhà xuất bản</option>
+                <option v-for="nxb in nhaXuatBanList" :key="nxb.MaNhaXuatBan" :value="nxb.MaNhaXuatBan">
+                  {{ nxb.TenNhaXuatBan }}
+                </option>
+              </select>
+              <div class="invalid-feedback" v-if="errors.MaNhaXuatBan">{{ errors.MaNhaXuatBan }}</div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="nguonGoc" class="form-label">Tác giả <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="nguonGoc" v-model="formData.NguonGoc"
+                :class="{ 'is-invalid': errors.NguonGoc }" placeholder="VD: Nguyễn Văn A">
+              <div class="invalid-feedback" v-if="errors.NguonGoc">{{ errors.NguonGoc }}</div>
+            </div>
+          </div>
+        </div>
+      </form>
+    </Modal>
 
     <!-- Delete Confirmation Modal -->
-    <div class="modal fade" :class="{ show: showDeleteModal }" :style="{ display: showDeleteModal ? 'block' : 'none' }"
-      tabindex="-1">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title text-danger">
-              <i class="bi bi-exclamation-triangle me-2"></i>Xác nhận xóa
-            </h5>
-            <button type="button" class="btn-close" @click="showDeleteModal = false"></button>
-          </div>
-          <div class="modal-body">
-            <p>Bạn có chắc chắn muốn xóa sách <strong>{{ deletingSach?.TenSach }}</strong>?</p>
-            <p class="text-muted small">Hành động này không thể hoàn tác.</p>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" @click="showDeleteModal = false">
-              <i class="bi bi-x-circle me-2"></i>Hủy
-            </button>
-            <button type="button" class="btn btn-danger" @click="deleteSach" :disabled="deleting">
-              <span v-if="deleting" class="spinner-border spinner-border-sm me-2"></span>
-              <i class="bi bi-trash me-2" v-else></i>
-              Xóa
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Modal Backdrop -->
-    <div class="modal-backdrop fade show" v-if="showModal || showDeleteModal"></div>
+    <Modal :show="showDeleteModal" title="Xác nhận xóa" icon="bi bi-exclamation-triangle" size="md" :loading="deleting"
+      loading-text="Đang xóa..." confirm-text="Xóa" confirm-type="danger" cancel-text="Hủy"
+      @close="showDeleteModal = false" @confirm="deleteSach" @cancel="showDeleteModal = false">
+      <p>Bạn có chắc chắn muốn xóa sách <strong>{{ deletingSach?.TenSach }}</strong>?</p>
+      <p class="text-muted small">Hành động này không thể hoàn tác.</p>
+    </Modal>
   </div>
 </template>
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import axios from 'axios'
+import api from '../utils/axios.js'
+import DataTable from '../components/DataTable.vue'
+import Modal from '../components/Modal.vue'
 
 // Reactive data
 const sachList = ref([])
@@ -297,6 +142,55 @@ const formData = ref({
 
 // Form errors
 const errors = ref({})
+
+// Table columns
+const columns = ref([
+  {
+    key: 'MaSach',
+    title: 'Mã sách',
+    sortable: true,
+    width: '100px'
+  },
+  {
+    key: 'TenSach',
+    title: 'Tên sách',
+    sortable: true
+  },
+  {
+    key: 'DonGia',
+    title: 'Đơn giá',
+    type: 'currency',
+    sortable: true,
+    width: '120px',
+    align: 'right'
+  },
+  {
+    key: 'SoQuyen',
+    title: 'Số quyển',
+    sortable: true,
+    width: '100px',
+    align: 'center'
+  },
+  {
+    key: 'NamXuatBan',
+    title: 'Năm XB',
+    sortable: true,
+    width: '100px',
+    align: 'center'
+  },
+  {
+    key: 'NhaXuatBan',
+    title: 'Nhà XB',
+    sortable: true,
+    width: '150px'
+  },
+  {
+    key: 'NguonGoc',
+    title: 'Tác giả',
+    sortable: true,
+    width: '150px'
+  }
+])
 
 // Computed properties
 const filteredSach = computed(() => {
@@ -401,7 +295,7 @@ const loadSach = async () => {
 
   try {
     // Try to get data from API
-    const response = await axios.get('/api/sach')
+    const response = await api.get('/sach')
     const apiData = response.data.data?.sach || response.data.data || []
 
     // Use API data if available and valid, otherwise use mock data
@@ -435,7 +329,7 @@ const loadNhaXuatBan = async () => {
   ]
 
   try {
-    const response = await axios.get('/api/nhaxuatban')
+    const response = await api.get('/nhaxuatban')
     const apiData = response.data.data?.nhaxuatban || response.data.data || []
 
     if (Array.isArray(apiData) && apiData.length > 0) {
@@ -449,8 +343,31 @@ const loadNhaXuatBan = async () => {
   }
 }
 
-const handleSearch = () => {
+const handleSearch = (query) => {
+  searchQuery.value = query
   currentPage.value = 1
+}
+
+const handleAction = ({ action, item }) => {
+  switch (action) {
+    case 'view':
+      viewSach(item)
+      break
+    case 'edit':
+      editSach(item)
+      break
+    case 'delete':
+      confirmDelete(item)
+      break
+  }
+}
+
+const formatCurrency = (value) => {
+  if (!value) return '0 ₫'
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND'
+  }).format(value)
 }
 
 const clearSearch = () => {
@@ -558,7 +475,7 @@ const saveSach = async () => {
 
     if (editingSach.value) {
       // Update existing
-      await axios.put(`/api/sach/${editingSach.value.MaSach}`, sachData)
+      await api.put(`/sach/${editingSach.value.MaSach}`, sachData)
       if (Array.isArray(sachList.value)) {
         const index = sachList.value.findIndex(s => s.MaSach === editingSach.value.MaSach)
         if (index !== -1) {
@@ -567,7 +484,7 @@ const saveSach = async () => {
       }
     } else {
       // Create new
-      await axios.post('/api/sach', sachData)
+      await api.post('/sach', sachData)
       if (Array.isArray(sachList.value)) {
         sachList.value.push({ ...sachData })
       }
@@ -586,6 +503,11 @@ const saveSach = async () => {
   }
 }
 
+const viewSach = (sach) => {
+  // For now, just edit the book. Later can implement a view-only modal
+  editSach(sach)
+}
+
 const confirmDelete = (sach) => {
   deletingSach.value = sach
   showDeleteModal.value = true
@@ -596,7 +518,7 @@ const deleteSach = async () => {
 
   deleting.value = true
   try {
-    await axios.delete(`/api/sach/${deletingSach.value.MaSach}`)
+    await api.delete(`/sach/${deletingSach.value.MaSach}`)
     if (Array.isArray(sachList.value)) {
       const index = sachList.value.findIndex(s => s.MaSach === deletingSach.value.MaSach)
       if (index !== -1) {
@@ -620,12 +542,7 @@ const deleteSach = async () => {
   }
 }
 
-const formatCurrency = (amount) => {
-  return new Intl.NumberFormat('vi-VN', {
-    style: 'currency',
-    currency: 'VND'
-  }).format(amount)
-}
+
 
 // Watch for search query changes
 watch(searchQuery, () => {

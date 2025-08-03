@@ -1,256 +1,314 @@
 <template>
-    <nav class="sidebar" :class="{ 'sidebar-collapsed': isCollapsed }" v-if="!loading">
-        <div class="sidebar-header">
-            <button class="btn btn-link sidebar-toggle" @click="toggleSidebar"
-                :title="isCollapsed ? 'Mở rộng menu' : 'Thu gọn menu'">
-                <i class="fas fa-bars"></i>
-            </button>
-        </div>
-
-        <div class="sidebar-content">
-            <ul class="nav nav-pills flex-column">
-                <!-- Dashboard -->
-                <li class="nav-item">
-                    <router-link to="/admin" class="nav-link" :class="{ active: $route.path === '/admin' }">
-                        <i class="fas fa-tachometer-alt nav-icon"></i>
-                        <span class="nav-text">Dashboard</span>
-                    </router-link>
-                </li>
-
-                <!-- Quản lý độc giả -->
-                <li class="nav-item">
-                    <router-link to="/admin/docgia" class="nav-link"
-                        :class="{ active: $route.path.includes('/docgia') }">
-                        <i class="fas fa-users nav-icon"></i>
-                        <span class="nav-text">Quản lý độc giả</span>
-                    </router-link>
-                </li>
-
-                <!-- Quản lý sách -->
-                <li class="nav-item">
-                    <router-link to="/admin/sach" class="nav-link" :class="{ active: $route.path.includes('/sach') }">
-                        <i class="fas fa-book nav-icon"></i>
-                        <span class="nav-text">Quản lý sách</span>
-                    </router-link>
-                </li>
-
-                <!-- Quản lý nhà xuất bản -->
-                <li class="nav-item">
-                    <router-link to="/admin/nhaxuatban" class="nav-link"
-                        :class="{ active: $route.path.includes('/nhaxuatban') }">
-                        <i class="fas fa-building nav-icon"></i>
-                        <span class="nav-text">Nhà xuất bản</span>
-                    </router-link>
-                </li>
-
-                <!-- Theo dõi mượn sách -->
-                <li class="nav-item">
-                    <router-link to="/admin/theodoimuonsach" class="nav-link"
-                        :class="{ active: $route.path.includes('/theodoimuonsach') }">
-                        <i class="fas fa-exchange-alt nav-icon"></i>
-                        <span class="nav-text">Mượn trả sách</span>
-                    </router-link>
-                </li>
-
-                <!-- Quản lý nhân viên (chỉ admin) -->
-                <li class="nav-item" v-if="!loading && canManageUsers">
-                    <router-link to="/admin/users" class="nav-link" :class="{ active: $route.path.includes('/users') }">
-                        <i class="fas fa-user-tie nav-icon"></i>
-                        <span class="nav-text">Quản lý nhân viên</span>
-                    </router-link>
-                </li>
-
-                <!-- Divider -->
-                <li class="nav-divider"></li>
-
-                <!-- Thống kê -->
-                <li class="nav-item">
-                    <router-link to="/admin/thongke" class="nav-link"
-                        :class="{ active: $route.path.includes('/thongke') }">
-                        <i class="fas fa-chart-bar nav-icon"></i>
-                        <span class="nav-text">Thống kê</span>
-                    </router-link>
-                </li>
-
-                <!-- Cài đặt -->
-                <li class="nav-item">
-                    <router-link to="/admin/settings" class="nav-link"
-                        :class="{ active: $route.path.includes('/settings') }">
-                        <i class="fas fa-cog nav-icon"></i>
-                        <span class="nav-text">Cài đặt</span>
-                    </router-link>
-                </li>
-            </ul>
-        </div>
-    </nav>
-    <div v-else class="sidebar-loading">
-        <div class="text-center p-3">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Loading...</span>
-            </div>
-        </div>
+  <div class="sidebar" :class="{ 'sidebar-collapsed': collapsed }">
+    <div class="sidebar-header">
+      <div class="sidebar-brand">
+        <i class="bi bi-book-half"></i>
+        <span v-if="!collapsed" class="brand-text">Quản lý mượn sách</span>
+      </div>
+      <button 
+        class="sidebar-toggle" 
+        @click="toggleSidebar"
+        :title="collapsed ? 'Mở rộng' : 'Thu gọn'"
+      >
+        <i class="bi" :class="collapsed ? 'bi-chevron-right' : 'bi-chevron-left'"></i>
+      </button>
     </div>
+
+    <nav class="sidebar-nav">
+      <ul class="nav-list">
+        <li class="nav-item" v-for="item in menuItems" :key="item.name">
+          <router-link 
+            :to="item.path" 
+            class="nav-link"
+            :class="{ 'active': isActive(item.path) }"
+            @click="handleNavClick"
+          >
+            <i class="nav-icon" :class="item.icon"></i>
+            <span v-if="!collapsed" class="nav-text">{{ item.label }}</span>
+            <span v-if="item.badge && !collapsed" class="nav-badge" :class="item.badgeClass">
+              {{ item.badge }}
+            </span>
+          </router-link>
+        </li>
+      </ul>
+    </nav>
+
+    <div v-if="!collapsed" class="sidebar-footer">
+      <div class="user-info">
+        <div class="user-avatar">
+          <i class="bi bi-person-circle"></i>
+        </div>
+        <div class="user-details">
+          <div class="user-name">{{ user?.HoTenNV || 'Admin' }}</div>
+          <div class="user-role">{{ user?.ChucVu || 'Quản trị viên' }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useAuth } from '../composables/useAuth.js'
+import { useRoute } from 'vue-router'
 
-const { currentUser, isAuthenticated } = useAuth()
+const props = defineProps({
+  modelValue: {
+    type: Boolean,
+    default: false
+  },
+  menuItems: {
+    type: Array,
+    default: () => [
+      {
+        name: 'dashboard',
+        path: '/admin',
+        label: 'Dashboard',
+        icon: 'bi bi-speedometer2'
+      },
+      {
+        name: 'docgia',
+        path: '/admin/docgia',
+        label: 'Độc giả',
+        icon: 'bi bi-people'
+      },
+      {
+        name: 'sach',
+        path: '/admin/sach',
+        label: 'Sách',
+        icon: 'bi bi-book'
+      },
+      {
+        name: 'nhaxuatban',
+        path: '/admin/nhaxuatban',
+        label: 'Nhà xuất bản',
+        icon: 'bi bi-building'
+      },
+      {
+        name: 'theodoimuonsach',
+        path: '/admin/theodoimuonsach',
+        label: 'Mượn trả sách',
+        icon: 'bi bi-arrow-repeat'
+      },
+      {
+        name: 'thongke',
+        path: '/admin/thongke',
+        label: 'Thống kê',
+        icon: 'bi bi-graph-up'
+      }
+    ]
+  }
+})
 
-const isCollapsed = ref(false)
-const loading = ref(true)
+const emit = defineEmits(['update:modelValue', 'nav-click'])
 
-const canManageUsers = computed(() => {
+const route = useRoute()
+const collapsed = ref(props.modelValue)
+const user = ref(null)
+
+// Load user info from localStorage
+onMounted(() => {
+  const userData = localStorage.getItem('user')
+  if (userData) {
     try {
-        if (!currentUser || !currentUser.value) return false
-        const user = currentUser.value
-        if (!user || typeof user !== 'object') return false
-
-        return user.chucVu === 'Quản lý thư viện' ||
-            (Array.isArray(user.quyen) && user.quyen.includes('quan_ly'))
+      user.value = JSON.parse(userData)
     } catch (error) {
-        console.warn('Error checking user permissions:', error)
-        return false
+      console.error('Error parsing user data:', error)
     }
+  }
 })
 
 const toggleSidebar = () => {
-    isCollapsed.value = !isCollapsed.value
-    // Save state to localStorage
-    localStorage.setItem('sidebarCollapsed', isCollapsed.value.toString())
+  collapsed.value = !collapsed.value
+  emit('update:modelValue', collapsed.value)
 }
 
-// Restore sidebar state from localStorage
-onMounted(() => {
-    const saved = localStorage.getItem('sidebarCollapsed')
-    if (saved !== null) {
-        isCollapsed.value = saved === 'true'
-    }
-    loading.value = false
-})
+const isActive = (path) => {
+  if (path === '/admin') {
+    return route.path === '/admin'
+  }
+  return route.path.startsWith(path)
+}
+
+const handleNavClick = () => {
+  emit('nav-click')
+}
 </script>
 
 <style scoped>
 .sidebar {
-    width: 250px;
-    min-height: 100vh;
-    background: #343a40;
-    transition: width 0.3s ease;
-    position: fixed;
-    top: 0;
-    left: 0;
-    z-index: 1000;
-    overflow-x: hidden;
+  width: 250px;
+  height: 100vh;
+  background: linear-gradient(180deg, #4e73df 0%, #224abe 100%);
+  color: white;
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 1000;
+  transition: width 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
 }
 
 .sidebar-collapsed {
-    width: 60px;
+  width: 70px;
 }
 
 .sidebar-header {
-    padding: 1rem;
-    border-bottom: 1px solid #495057;
+  padding: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 70px;
+}
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+.sidebar-brand i {
+  font-size: 1.5rem;
+  margin-right: 0.5rem;
+}
+
+.brand-text {
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .sidebar-toggle {
-    color: #fff;
-    border: none;
-    background: none;
-    font-size: 1.2rem;
-    padding: 0.5rem;
-    border-radius: 0.25rem;
-    transition: background-color 0.15s ease;
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 0.25rem;
+  transition: background-color 0.2s;
 }
 
 .sidebar-toggle:hover {
-    background-color: #495057;
-    color: #fff;
+  background-color: rgba(255, 255, 255, 0.1);
 }
 
-.sidebar-content {
-    padding: 1rem 0;
+.sidebar-nav {
+  flex: 1;
+  padding: 1rem 0;
+  overflow-y: auto;
 }
 
-.nav-pills .nav-link {
-    color: #adb5bd;
-    border-radius: 0;
-    padding: 0.75rem 1rem;
-    margin: 0.125rem 0.5rem;
-    border-radius: 0.375rem;
-    transition: all 0.15s ease;
-    display: flex;
-    align-items: center;
-    white-space: nowrap;
+.nav-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
 }
 
-.nav-pills .nav-link:hover {
-    background-color: #495057;
-    color: #fff;
+.nav-item {
+  margin-bottom: 0.25rem;
 }
 
-.nav-pills .nav-link.active {
-    background-color: #0d6efd;
-    color: #fff;
+.nav-link {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  color: rgba(255, 255, 255, 0.8);
+  text-decoration: none;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.nav-link:hover {
+  color: white;
+  background-color: rgba(255, 255, 255, 0.1);
+  text-decoration: none;
+}
+
+.nav-link.active {
+  color: white;
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.nav-link.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background-color: white;
 }
 
 .nav-icon {
-    width: 20px;
-    text-align: center;
-    margin-right: 0.75rem;
-    flex-shrink: 0;
+  font-size: 1.1rem;
+  width: 20px;
+  text-align: center;
+  margin-right: 0.75rem;
 }
 
 .nav-text {
-    transition: opacity 0.3s ease;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
-.sidebar-collapsed .nav-text {
-    opacity: 0;
-    width: 0;
-    overflow: hidden;
+.nav-badge {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 1rem;
+  background-color: #e74a3b;
+  color: white;
+  margin-left: auto;
 }
 
-.sidebar-collapsed .nav-icon {
-    margin-right: 0;
+.sidebar-footer {
+  padding: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.nav-divider {
-    height: 1px;
-    background-color: #495057;
-    margin: 0.5rem 1rem;
+.user-info {
+  display: flex;
+  align-items: center;
+}
+
+.user-avatar {
+  font-size: 2rem;
+  margin-right: 0.75rem;
+  opacity: 0.8;
+}
+
+.user-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.user-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-role {
+  font-size: 0.75rem;
+  opacity: 0.7;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Responsive */
-@media (max-width: 991.98px) {
-    .sidebar {
-        transform: translateX(-100%);
-        transition: transform 0.3s ease;
-    }
-
-    .sidebar.show {
-        transform: translateX(0);
-    }
-}
-
-/* Tooltip for collapsed sidebar */
-.sidebar-collapsed .nav-link {
-    position: relative;
-}
-
-.sidebar-collapsed .nav-link:hover::after {
-    content: attr(title);
-    position: absolute;
-    left: 100%;
-    top: 50%;
-    transform: translateY(-50%);
-    background: #000;
-    color: #fff;
-    padding: 0.25rem 0.5rem;
-    border-radius: 0.25rem;
-    font-size: 0.875rem;
-    white-space: nowrap;
-    z-index: 1001;
-    margin-left: 0.5rem;
+@media (max-width: 768px) {
+  .sidebar {
+    transform: translateX(-100%);
+  }
+  
+  .sidebar.show {
+    transform: translateX(0);
+  }
 }
 </style>

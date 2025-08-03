@@ -1,139 +1,22 @@
 <template>
   <div class="container-fluid">
-    <div class="row">
-      <div class="col-12">
-        <div class="card shadow">
-          <div class="card-header py-3">
-            <h5 class="card-title mb-0 text-primary font-weight-bold">
-              <i class="bi bi-building me-2"></i>Quản lý nhà xuất bản
-            </h5>
-          </div>
-          <div class="card-body">
-            <!-- Search and Add Section -->
-            <div class="row mb-4">
-              <div class="col-md-8">
-                <div class="input-group">
-                  <span class="input-group-text">
-                    <i class="bi bi-search"></i>
-                  </span>
-                  <input 
-                    type="text" 
-                    class="form-control" 
-                    placeholder="Tìm kiếm theo mã, tên nhà xuất bản, địa chỉ..."
-                    v-model="searchQuery"
-                    @input="handleSearch"
-                  >
-                  <button class="btn btn-outline-secondary" @click="clearSearch" v-if="searchQuery">
-                    <i class="bi bi-x"></i>
-                  </button>
-                </div>
-              </div>
-              <div class="col-md-4 text-end">
-                <button class="btn btn-primary" @click="showAddModal">
-                  <i class="bi bi-plus-circle me-2"></i>Thêm nhà xuất bản
-                </button>
-              </div>
-            </div>
-            
-            <!-- Table Section -->
-            <div class="table-responsive">
-              <table class="table table-hover">
-                <thead class="table-light">
-                  <tr>
-                    <th style="width: 120px;">Mã NXB</th>
-                    <th>Tên nhà xuất bản</th>
-                    <th>Địa chỉ</th>
-                    <th style="width: 120px;">Điện thoại</th>
-                    <th style="width: 100px;" class="text-center">Số sách</th>
-                    <th style="width: 120px;" class="text-center">Thao tác</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="nxb in paginatedNXB" :key="nxb.MaNhaXuatBan">
-                    <td>
-                      <span class="badge bg-info">{{ nxb.MaNhaXuatBan }}</span>
-                    </td>
-                    <td class="fw-bold">{{ nxb.TenNhaXuatBan }}</td>
-                    <td class="text-truncate" style="max-width: 250px;" :title="nxb.DiaChi">
-                      {{ nxb.DiaChi }}
-                    </td>
-                    <td>{{ nxb.DienThoai || 'N/A' }}</td>
-                    <td class="text-center">
-                      <span class="badge bg-secondary">{{ nxb.SoSach || 0 }}</span>
-                    </td>
-                    <td class="text-center">
-                      <div class="btn-group" role="group">
-                        <button 
-                          class="btn btn-sm btn-outline-primary" 
-                          @click="editNXB(nxb)"
-                          title="Chỉnh sửa"
-                        >
-                          <i class="bi bi-pencil"></i>
-                        </button>
-                        <button 
-                          class="btn btn-sm btn-outline-danger" 
-                          @click="confirmDelete(nxb)"
-                          title="Xóa"
-                        >
-                          <i class="bi bi-trash"></i>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                  <tr v-if="filteredNXB.length === 0 && !loading">
-                    <td colspan="6" class="text-center text-muted py-4">
-                      <i class="bi bi-inbox display-4 d-block mb-2"></i>
-                      {{ searchQuery ? 'Không tìm thấy nhà xuất bản nào' : 'Chưa có nhà xuất bản nào' }}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            
-            <!-- Loading State -->
-            <div v-if="loading" class="text-center py-4">
-              <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Đang tải...</span>
-              </div>
-              <p class="mt-2 text-muted">Đang tải danh sách nhà xuất bản...</p>
-            </div>
-            
-            <!-- Pagination -->
-            <div class="row mt-4" v-if="filteredNXB.length > 0">
-              <div class="col-md-6">
-                <p class="text-muted">
-                  Hiển thị {{ startIndex + 1 }} - {{ endIndex }} trong tổng số {{ filteredNXB.length }} nhà xuất bản
-                </p>
-              </div>
-              <div class="col-md-6">
-                <nav aria-label="Pagination">
-                  <ul class="pagination justify-content-end mb-0">
-                    <li class="page-item" :class="{ disabled: currentPage === 1 }">
-                      <button class="page-link" @click="goToPage(currentPage - 1)" :disabled="currentPage === 1">
-                        <i class="bi bi-chevron-left"></i>
-                      </button>
-                    </li>
-                    <li 
-                      class="page-item" 
-                      v-for="page in visiblePages" 
-                      :key="page"
-                      :class="{ active: page === currentPage }"
-                    >
-                      <button class="page-link" @click="goToPage(page)">{{ page }}</button>
-                    </li>
-                    <li class="page-item" :class="{ disabled: currentPage === totalPages }">
-                      <button class="page-link" @click="goToPage(currentPage + 1)" :disabled="currentPage === totalPages">
-                        <i class="bi bi-chevron-right"></i>
-                      </button>
-                    </li>
-                  </ul>
-                </nav>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <DataTable
+      title="Quản lý nhà xuất bản"
+      :data="nxbList"
+      :columns="columns"
+      :loading="loading"
+      :searchable="true"
+      search-placeholder="Tìm kiếm theo mã, tên nhà xuất bản, địa chỉ..."
+      :actions="['view', 'edit', 'delete']"
+      @search="handleSearch"
+      @action="handleAction"
+    >
+      <template #actions>
+        <button class="btn btn-primary" @click="showAddModal">
+          <i class="bi bi-plus-circle me-2"></i>Thêm nhà xuất bản
+        </button>
+      </template>
+    </DataTable>
 
     <!-- Add/Edit Modal -->
     <div class="modal fade" :class="{ show: showModal }" :style="{ display: showModal ? 'block' : 'none' }" tabindex="-1">
@@ -260,7 +143,9 @@
 </template>
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import axios from 'axios'
+import api from '../utils/axios.js'
+import DataTable from '../components/DataTable.vue'
+import Modal from '../components/Modal.vue'
 
 // Reactive data
 const nxbList = ref([])
@@ -287,6 +172,32 @@ const formData = ref({
 
 // Form errors
 const errors = ref({})
+
+// Table columns
+const columns = ref([
+  {
+    key: 'MaNhaXuatBan',
+    title: 'Mã NXB',
+    sortable: true,
+    width: '120px'
+  },
+  {
+    key: 'TenNhaXuatBan',
+    title: 'Tên nhà xuất bản',
+    sortable: true
+  },
+  {
+    key: 'DiaChi',
+    title: 'Địa chỉ',
+    sortable: true
+  },
+  {
+    key: 'DienThoai',
+    title: 'Điện thoại',
+    sortable: true,
+    width: '150px'
+  }
+])
 
 // Computed properties
 const filteredNXB = computed(() => {
@@ -373,7 +284,7 @@ const loadNXB = async () => {
   
   try {
     // Try to get data from API
-    const response = await axios.get('/api/nhaxuatban')
+    const response = await api.get('/nhaxuatban')
     const apiData = response.data.data?.nhaxuatban || response.data.data || []
     
     // Use API data if available and valid, otherwise use mock data
@@ -396,8 +307,28 @@ const loadNXB = async () => {
   }
 }
 
-const handleSearch = () => {
+const handleSearch = (query) => {
+  searchQuery.value = query
   currentPage.value = 1
+}
+
+const handleAction = ({ action, item }) => {
+  switch (action) {
+    case 'view':
+      viewNXB(item)
+      break
+    case 'edit':
+      editNXB(item)
+      break
+    case 'delete':
+      confirmDelete(item)
+      break
+  }
+}
+
+const viewNXB = (nxb) => {
+  // For now, just edit the publisher. Later can implement a view-only modal
+  editNXB(nxb)
 }
 
 const clearSearch = () => {
@@ -477,7 +408,7 @@ const saveNXB = async () => {
   try {
     if (editingNXB.value) {
       // Update existing
-      await axios.put(`/api/nhaxuatban/${editingNXB.value.MaNhaXuatBan}`, formData.value)
+      await api.put(`/nhaxuatban/${editingNXB.value.MaNhaXuatBan}`, formData.value)
       if (Array.isArray(nxbList.value)) {
         const index = nxbList.value.findIndex(n => n.MaNhaXuatBan === editingNXB.value.MaNhaXuatBan)
         if (index !== -1) {
@@ -486,7 +417,7 @@ const saveNXB = async () => {
       }
     } else {
       // Create new
-      await axios.post('/api/nhaxuatban', formData.value)
+      await api.post('/nhaxuatban', formData.value)
       if (Array.isArray(nxbList.value)) {
         nxbList.value.push({ ...formData.value, SoSach: 0 })
       }
@@ -515,7 +446,7 @@ const deleteNXB = async () => {
   
   deleting.value = true
   try {
-    await axios.delete(`/api/nhaxuatban/${deletingNXB.value.MaNhaXuatBan}`)
+    await api.delete(`/nhaxuatban/${deletingNXB.value.MaNhaXuatBan}`)
     if (Array.isArray(nxbList.value)) {
       const index = nxbList.value.findIndex(n => n.MaNhaXuatBan === deletingNXB.value.MaNhaXuatBan)
       if (index !== -1) {
