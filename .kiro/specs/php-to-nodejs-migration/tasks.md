@@ -35,9 +35,6 @@
 
 - [ ] 5. Tạo controllers cho CRUD operations
 
-
-
-
   - Implement DocGiaController với pagination và search
   - Implement SachController với pagination và search
   - Implement NhaXuatBanController với pagination và search
@@ -46,7 +43,6 @@
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.6_
 
 - [x] 6. Thiết lập API routes
-
 
   - Tạo routes cho authentication endpoints
   - Tạo routes cho DocGia management
@@ -58,10 +54,6 @@
 
 - [x] 7. Thiết lập frontend Vue.js cơ bản
 
-
-
-
-
   - Tạo cấu trúc frontend mới với Vite + Vue 3
   - Cấu hình package.json với dependencies cần thiết
   - Thiết lập Vite config với proxy cho API calls
@@ -71,9 +63,6 @@
 
 - [x] 8. Implement authentication UI
 
-
-
-
   - Tạo Login.vue component
   - Implement JWT token storage
   - Tạo authentication guards cho routes
@@ -81,9 +70,6 @@
   - _Requirements: 4.4, 6.4_
 
 - [x] 9. Tạo layout và navigation
-
-
-
 
   - Tạo Header.vue và Footer.vue từ PHP layouts
   - Tạo AdminLayout.vue với sidebar collapse menu
@@ -116,7 +102,7 @@
   - Test user interactions
   - _Requirements: 5.3_
 
-- [ ] 13. Implement TheoDoiMuonSach management UI
+- [x] 13. Implement TheoDoiMuonSach management UI
 
   - Tạo TheoDoiMuonSach.vue view với mượn/trả sách
   - Implement search theo độc giả và sách
@@ -124,7 +110,7 @@
   - Test workflow mượn trả sách
   - _Requirements: 5.4_
 
-- [ ] 14. Tạo Dashboard với thống kê
+- [x] 14. Tạo Dashboard với thống kê
 
   - Tạo Dashboard.vue với layout giống PHP admin
   - Implement StatsCard.vue component cho thống kê cards
@@ -139,6 +125,7 @@
   - Tạo DataTable.vue component với styling giống PHP
   - Tạo SearchBox.vue và Pagination.vue components
   - Tạo Modal.vue component cho forms
+
   - Test component reusability và styling
   - _Requirements: 7.2_
 

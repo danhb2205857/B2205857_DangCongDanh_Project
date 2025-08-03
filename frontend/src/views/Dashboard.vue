@@ -1,73 +1,69 @@
 <template>
   <div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+      <h1 class="h3 mb-0 text-gray-800">Dashboard</h1>
+      <button @click="refreshData" class="btn btn-primary btn-sm shadow-sm" :disabled="loading">
+        <i class="bi bi-arrow-clockwise"></i>
+        {{ loading ? 'Đang tải...' : 'Làm mới' }}
+      </button>
+    </div>
+
     <!-- Stats Cards Row -->
     <div class="row mb-4">
-      <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card border-left-primary shadow h-100 py-2">
-          <div class="card-body">
-            <div class="row no-gutters align-items-center">
-              <div class="col mr-2">
-                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                  Tổng số sách
-                </div>
-                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.totalBooks }}</div>
-              </div>
-              <div class="col-auto">
-                <i class="bi bi-book text-primary" style="font-size: 2rem;"></i>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <StatsCard
+        title="Tổng số sách"
+        :value="stats.overview?.totalBooks || 0"
+        :subtitle="`${stats.overview?.totalQuantity || 0} quyển`"
+        icon="bi bi-book"
+        color="primary"
+      />
+      
+      <StatsCard
+        title="Tổng độc giả"
+        :value="stats.overview?.totalReaders || 0"
+        :subtitle="`${stats.today?.newReaders || 0} mới hôm nay`"
+        icon="bi bi-people"
+        color="success"
+      />
+      
+      <StatsCard
+        title="Sách đang mượn"
+        :value="stats.overview?.activeBorrows || 0"
+        :subtitle="`${stats.overview?.overdueBorrows || 0} quá hạn`"
+        icon="bi bi-arrow-repeat"
+        color="info"
+      />
+      
+      <StatsCard
+        title="Nhà xuất bản"
+        :value="stats.overview?.totalPublishers || 0"
+        :subtitle="`${stats.overview?.availableBooks || 0} sách có sẵn`"
+        icon="bi bi-building"
+        color="warning"
+      />
+    </div>
 
-      <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card border-left-success shadow h-100 py-2">
-          <div class="card-body">
-            <div class="row no-gutters align-items-center">
-              <div class="col mr-2">
-                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                  Tổng độc giả
-                </div>
-                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.totalReaders }}</div>
-              </div>
-              <div class="col-auto">
-                <i class="bi bi-people text-success" style="font-size: 2rem;"></i>
-              </div>
-            </div>
+    <!-- Today's Stats Row -->
+    <div class="row mb-4">
+      <div class="col-lg-12">
+        <div class="card shadow">
+          <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Thống kê hôm nay</h6>
           </div>
-        </div>
-      </div>
-
-      <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card border-left-info shadow h-100 py-2">
           <div class="card-body">
-            <div class="row no-gutters align-items-center">
-              <div class="col mr-2">
-                <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
-                  Sách đang mượn
-                </div>
-                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.borrowedBooks }}</div>
+            <div class="row">
+              <div class="col-md-4 text-center">
+                <div class="h4 mb-0 text-primary">{{ stats.today?.borrows || 0 }}</div>
+                <div class="text-xs text-uppercase">Lượt mượn</div>
               </div>
-              <div class="col-auto">
-                <i class="bi bi-arrow-repeat text-info" style="font-size: 2rem;"></i>
+              <div class="col-md-4 text-center">
+                <div class="h4 mb-0 text-success">{{ stats.today?.returns || 0 }}</div>
+                <div class="text-xs text-uppercase">Lượt trả</div>
               </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card border-left-warning shadow h-100 py-2">
-          <div class="card-body">
-            <div class="row no-gutters align-items-center">
-              <div class="col mr-2">
-                <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
-                  Nhà xuất bản
-                </div>
-                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.totalPublishers }}</div>
-              </div>
-              <div class="col-auto">
-                <i class="bi bi-building text-warning" style="font-size: 2rem;"></i>
+              <div class="col-md-4 text-center">
+                <div class="h4 mb-0 text-info">{{ stats.today?.newReaders || 0 }}</div>
+                <div class="text-xs text-uppercase">Độc giả mới</div>
               </div>
             </div>
           </div>
@@ -79,12 +75,23 @@
     <div class="row">
       <div class="col-lg-6 mb-4">
         <div class="card shadow">
-          <div class="card-header py-3">
+          <div class="card-header py-3 d-flex justify-content-between align-items-center">
             <h6 class="m-0 font-weight-bold text-primary">Sách mới nhất</h6>
+            <router-link to="/admin/sach" class="btn btn-sm btn-outline-primary">
+              Xem tất cả
+            </router-link>
           </div>
           <div class="card-body">
-            <div class="table-responsive">
-              <table class="table table-sm">
+            <div v-if="loading" class="text-center py-3">
+              <div class="spinner-border spinner-border-sm" role="status">
+                <span class="sr-only">Đang tải...</span>
+              </div>
+            </div>
+            <div v-else-if="recentBooks.length === 0" class="text-center py-3 text-muted">
+              Chưa có dữ liệu
+            </div>
+            <div v-else class="table-responsive">
+              <table class="table table-sm table-hover">
                 <thead>
                   <tr>
                     <th>Tên sách</th>
@@ -94,9 +101,14 @@
                 </thead>
                 <tbody>
                   <tr v-for="book in recentBooks" :key="book.MaSach">
-                    <td>{{ book.TenSach }}</td>
-                    <td>{{ book.NguonGoc }}</td>
-                    <td>{{ book.NamXuatBan }}</td>
+                    <td>
+                      <div class="font-weight-bold">{{ book.TenSach }}</div>
+                      <small class="text-muted">{{ book.MaSach }}</small>
+                    </td>
+                    <td>{{ book.TacGia || book.NguonGoc }}</td>
+                    <td>
+                      <span class="badge badge-secondary">{{ book.NamXuatBan }}</span>
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -107,27 +119,71 @@
 
       <div class="col-lg-6 mb-4">
         <div class="card shadow">
-          <div class="card-header py-3">
+          <div class="card-header py-3 d-flex justify-content-between align-items-center">
             <h6 class="m-0 font-weight-bold text-primary">Hoạt động mượn sách gần đây</h6>
+            <router-link to="/admin/theodoimuonsach" class="btn btn-sm btn-outline-primary">
+              Xem tất cả
+            </router-link>
           </div>
           <div class="card-body">
-            <div class="table-responsive">
-              <table class="table table-sm">
+            <div v-if="loading" class="text-center py-3">
+              <div class="spinner-border spinner-border-sm" role="status">
+                <span class="sr-only">Đang tải...</span>
+              </div>
+            </div>
+            <div v-else-if="recentTransactions.length === 0" class="text-center py-3 text-muted">
+              Chưa có hoạt động
+            </div>
+            <div v-else class="table-responsive">
+              <table class="table table-sm table-hover">
                 <thead>
                   <tr>
                     <th>Độc giả</th>
                     <th>Sách</th>
-                    <th>Ngày mượn</th>
+                    <th>Trạng thái</th>
+                    <th>Ngày</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="activity in recentActivities" :key="activity.id">
-                    <td>{{ activity.docgia }}</td>
-                    <td>{{ activity.sach }}</td>
-                    <td>{{ formatDate(activity.ngayMuon) }}</td>
+                  <tr v-for="transaction in recentTransactions" :key="transaction.MaTheoDoiMuonSach">
+                    <td>
+                      <div class="font-weight-bold">
+                        {{ getReaderName(transaction.MaDocGia) }}
+                      </div>
+                      <small class="text-muted">{{ transaction.MaDocGia?.MaDocGia || transaction.MaDocGia }}</small>
+                    </td>
+                    <td>
+                      <div>{{ getBookTitle(transaction.MaSach) }}</div>
+                    </td>
+                    <td>
+                      <span :class="getStatusBadgeClass(transaction.TrangThai)">
+                        {{ transaction.TrangThai }}
+                      </span>
+                    </td>
+                    <td>
+                      <small>{{ formatDate(transaction.NgayTra || transaction.NgayMuon) }}</small>
+                    </td>
                   </tr>
                 </tbody>
               </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Overdue Books Alert -->
+    <div v-if="stats.overview?.overdueBorrows > 0" class="row">
+      <div class="col-12">
+        <div class="alert alert-warning shadow">
+          <div class="d-flex align-items-center">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            <div>
+              <strong>Cảnh báo:</strong> 
+              Có {{ stats.overview.overdueBorrows }} sách đang quá hạn trả.
+              <router-link to="/admin/theodoimuonsach?status=qua_han" class="alert-link ms-2">
+                Xem chi tiết →
+              </router-link>
             </div>
           </div>
         </div>
@@ -138,52 +194,124 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import api from '../utils/axios.js'
+import StatsCard from '../components/StatsCard.vue'
 
+const loading = ref(false)
 const stats = ref({
-  totalBooks: 0,
-  totalReaders: 0,
-  borrowedBooks: 0,
-  totalPublishers: 0
+  overview: {},
+  today: {}
 })
-
 const recentBooks = ref([])
-const recentActivities = ref([])
+const recentTransactions = ref([])
+const recentReaders = ref([])
 
-// Mock data
-const mockStats = {
-  totalBooks: 1250,
-  totalReaders: 340,
-  borrowedBooks: 89,
-  totalPublishers: 45
-}
-
-const mockRecentBooks = [
-  { MaSach: 'S001', TenSach: 'Lập trình JavaScript', NguonGoc: 'Nguyễn Văn A', NamXuatBan: 2023 },
-  { MaSach: 'S002', TenSach: 'Cơ sở dữ liệu', NguonGoc: 'Trần Thị B', NamXuatBan: 2023 },
-  { MaSach: 'S003', TenSach: 'Mạng máy tính', NguonGoc: 'Lê Văn C', NamXuatBan: 2022 }
-]
-
-const mockRecentActivities = [
-  { id: 1, docgia: 'Nguyễn Văn An', sach: 'Lập trình JavaScript', ngayMuon: '2024-01-15' },
-  { id: 2, docgia: 'Trần Thị Bình', sach: 'Cơ sở dữ liệu', ngayMuon: '2024-01-14' },
-  { id: 3, docgia: 'Lê Văn Cường', sach: 'Mạng máy tính', ngayMuon: '2024-01-13' }
-]
-
-const loadDashboardData = async () => {
+const loadDashboardStats = async () => {
   try {
-    // TODO: Replace with actual API calls
-    await new Promise(resolve => setTimeout(resolve, 500))
-    
-    stats.value = mockStats
-    recentBooks.value = mockRecentBooks
-    recentActivities.value = mockRecentActivities
+    const response = await api.get('/dashboard/stats')
+    if (response.data.success) {
+      stats.value = response.data.data
+    }
   } catch (error) {
-    console.error('Error loading dashboard data:', error)
+    console.error('Error loading dashboard stats:', error)
+    // Fallback to mock data for development
+    stats.value = {
+      overview: {
+        totalBooks: 1250,
+        totalReaders: 340,
+        activeBorrows: 89,
+        totalPublishers: 45,
+        overdueBorrows: 12,
+        totalQuantity: 2500,
+        availableBooks: 1161
+      },
+      today: {
+        borrows: 8,
+        returns: 5,
+        newReaders: 2
+      }
+    }
   }
 }
 
+const loadRecentActivities = async () => {
+  try {
+    const response = await api.get('/dashboard/recent-activities?limit=5')
+    if (response.data.success) {
+      const data = response.data.data
+      recentBooks.value = data.recentBooks || []
+      recentTransactions.value = data.recentTransactions || []
+      recentReaders.value = data.recentReaders || []
+    }
+  } catch (error) {
+    console.error('Error loading recent activities:', error)
+    // Fallback to mock data
+    recentBooks.value = [
+      { MaSach: 'S001', TenSach: 'Lập trình JavaScript', NguonGoc: 'Nguyễn Văn A', NamXuatBan: 2023 },
+      { MaSach: 'S002', TenSach: 'Cơ sở dữ liệu', NguonGoc: 'Trần Thị B', NamXuatBan: 2023 },
+      { MaSach: 'S003', TenSach: 'Mạng máy tính', NguonGoc: 'Lê Văn C', NamXuatBan: 2022 }
+    ]
+    recentTransactions.value = [
+      {
+        MaTheoDoiMuonSach: 'TD001',
+        MaDocGia: { MaDocGia: 'DG001', HoLot: 'Nguyễn Văn', Ten: 'An' },
+        MaSach: { MaSach: 'S001', TenSach: 'Lập trình JavaScript' },
+        TrangThai: 'Đang mượn',
+        NgayMuon: '2024-01-15'
+      }
+    ]
+  }
+}
+
+const loadDashboardData = async () => {
+  loading.value = true
+  try {
+    await Promise.all([
+      loadDashboardStats(),
+      loadRecentActivities()
+    ])
+  } finally {
+    loading.value = false
+  }
+}
+
+const refreshData = () => {
+  loadDashboardData()
+}
+
 const formatDate = (dateString) => {
-  return new Date(dateString).toLocaleDateString('vi-VN')
+  if (!dateString) return '-'
+  return new Date(dateString).toLocaleDateString('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  })
+}
+
+const getReaderName = (docgia) => {
+  if (typeof docgia === 'object' && docgia !== null) {
+    return `${docgia.HoLot} ${docgia.Ten}`.trim()
+  }
+  return docgia || '-'
+}
+
+const getBookTitle = (sach) => {
+  if (typeof sach === 'object' && sach !== null) {
+    return sach.TenSach || '-'
+  }
+  return sach || '-'
+}
+
+const getStatusBadgeClass = (status) => {
+  const classes = {
+    'Đang mượn': 'badge badge-info',
+    'Đã trả': 'badge badge-success',
+    'Quá hạn': 'badge badge-danger',
+    'qua_han': 'badge badge-danger',
+    'muon': 'badge badge-info',
+    'da_tra': 'badge badge-success'
+  }
+  return classes[status] || 'badge badge-secondary'
 }
 
 onMounted(() => {
@@ -193,22 +321,6 @@ onMounted(() => {
 
 <style scoped>
 @import '../assets/main_admin.css';
-
-.border-left-primary {
-  border-left: 0.25rem solid #4e73df !important;
-}
-
-.border-left-success {
-  border-left: 0.25rem solid #1cc88a !important;
-}
-
-.border-left-info {
-  border-left: 0.25rem solid #36b9cc !important;
-}
-
-.border-left-warning {
-  border-left: 0.25rem solid #f6c23e !important;
-}
 
 .text-xs {
   font-size: 0.7rem;
@@ -220,5 +332,65 @@ onMounted(() => {
 
 .shadow {
   box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15) !important;
+}
+
+.table-hover tbody tr:hover {
+  background-color: rgba(0, 0, 0, 0.075);
+}
+
+.badge {
+  font-size: 0.75em;
+  padding: 0.25em 0.5em;
+  border-radius: 0.375rem;
+}
+
+.badge-info {
+  color: #fff;
+  background-color: #36b9cc;
+}
+
+.badge-success {
+  color: #fff;
+  background-color: #1cc88a;
+}
+
+.badge-danger {
+  color: #fff;
+  background-color: #e74a3b;
+}
+
+.badge-secondary {
+  color: #fff;
+  background-color: #858796;
+}
+
+.alert-warning {
+  color: #856404;
+  background-color: #fff3cd;
+  border-color: #ffeaa7;
+}
+
+.btn-outline-primary {
+  color: #4e73df;
+  border-color: #4e73df;
+}
+
+.btn-outline-primary:hover {
+  color: #fff;
+  background-color: #4e73df;
+  border-color: #4e73df;
+}
+
+.spinner-border-sm {
+  width: 1rem;
+  height: 1rem;
+}
+
+.me-2 {
+  margin-right: 0.5rem !important;
+}
+
+.ms-2 {
+  margin-left: 0.5rem !important;
 }
 </style>

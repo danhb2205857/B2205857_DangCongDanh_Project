@@ -134,8 +134,7 @@ export default {
 
       // Get recent new books
       const recentBooks = await Sach.find()
-        .populate('MaNXB', 'TenNXB')
-        .select('MaSach TenSach TacGia NamXuatBan createdAt')
+        .select('MaSach TenSach NguonGoc NamXuatBan createdAt')
         .sort({ createdAt: -1 })
         .limit(5);
 

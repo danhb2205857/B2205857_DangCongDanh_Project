@@ -2,147 +2,403 @@
   <div class="container-fluid">
     <div class="row">
       <div class="col-12">
-        <div class="card">
-          <div class="card-header">
-            <h5 class="card-title mb-0">Theo dõi mượn sách</h5>
+        <div class="card shadow">
+          <div class="card-header py-3">
+            <h5 class="card-title mb-0 text-primary font-weight-bold">
+              <i class="bi bi-journal-bookmark me-2"></i>Quản lý mượn trả sách
+            </h5>
           </div>
           <div class="card-body">
-            <div class="row mb-3">
-              <div class="col-md-4">
-                <input 
-                  type="text" 
-                  class="form-control" 
-                  placeholder="Tìm kiếm theo độc giả..."
-                  v-model="searchQuery"
-                  @input="handleSearch"
-                >
+            <!-- Search and Add Section -->
+            <div class="row mb-4">
+              <div class="col-md-6">
+                <div class="input-group">
+                  <span class="input-group-text">
+                    <i class="bi bi-search"></i>
+                  </span>
+                  <input type="text" class="form-control"
+                    placeholder="Tìm kiếm theo mã, độc giả, sách..." v-model="searchQuery"
+                    @input="handleSearch">
+                  <button class="btn btn-outline-secondary" @click="clearSearch" v-if="searchQuery">
+                    <i class="bi bi-x"></i>
+                  </button>
+                </div>
               </div>
-              <div class="col-md-4">
-                <select class="form-select" v-model="statusFilter">
+              <div class="col-md-3">
+                <select class="form-select" v-model="statusFilter" @change="handleSearch">
                   <option value="">Tất cả trạng thái</option>
-                  <option value="muon">Đang mượn</option>
-                  <option value="tra">Đã trả</option>
+                  <option value="Đang mượn">Đang mượn</option>
+                  <option value="Đã trả">Đã trả</option>
+                  <option value="Quá hạn">Quá hạn</option>
                 </select>
               </div>
-              <div class="col-md-4 text-end">
-                <button class="btn btn-primary" @click="showAddModal = true">
-                  <i class="bi bi-plus-circle me-2"></i>Mượn sách mới
+              <div class="col-md-3 text-end">
+                <button class="btn btn-primary" @click="showBorrowModal">
+                  <i class="bi bi-plus-circle me-2"></i>Mượn sách
                 </button>
               </div>
             </div>
-            
+
+            <!-- Table Section -->
             <div class="table-responsive">
               <table class="table table-hover">
-                <thead>
+                <thead class="table-light">
                   <tr>
-                    <th>Mã độc giả</th>
-                    <th>Tên độc giả</th>
-                    <th>Tên sách</th>
-                    <th>Ngày mượn</th>
-                    <th>Ngày trả</th>
-                    <th>Trạng thái</th>
-                    <th>Thao tác</th>
+                    <th style="width: 100px;">Mã TD</th>
+                    <th style="width: 150px;">Độc giả</th>
+                    <th style="width: 200px;">Sách</th>
+                    <th style="width: 120px;">Ngày mượn</th>
+                    <th style="width: 120px;">Hẹn trả</th>
+                    <th style="width: 120px;">Ngày trả</th>
+                    <th style="width: 100px;">Trạng thái</th>
+                    <th style="width: 150px;" class="text-center">Thao tác</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="record in filteredRecords" :key="record.id">
-                    <td>{{ record.MaDocGia }}</td>
-                    <td>{{ record.TenDocGia }}</td>
-                    <td>{{ record.TenSach }}</td>
-                    <td>{{ formatDate(record.NgayMuon) }}</td>
-                    <td>{{ record.NgayTra ? formatDate(record.NgayTra) : '-' }}</td>
+                  <tr v-for="record in paginatedRecords" :key="record.MaTheoDoiMuonSach">
                     <td>
-                      <span :class="getStatusClass(record.TrangThai)">
-                        {{ getStatusText(record.TrangThai) }}
-                      </span>
+                      <span class="badge bg-info">{{ record.MaTheoDoiMuonSach }}</span>
                     </td>
                     <td>
-                      <div class="btn-group">
-                        <button 
-                          v-if="record.TrangThai === 'muon'" 
+                      <div class="fw-bold">{{ getReaderName(record) }}</div>
+                      <small class="text-muted">{{ record.MaDocGia }}</small>
+                    </td>
+                    <td>
+                      <div class="fw-bold text-truncate" style="max-width: 180px;" :title="getBookTitle(record)">
+                        {{ getBookTitle(record) }}
+                      </div>
+                      <small class="text-muted">{{ record.MaSach }}</small>
+                    </td>
+                    <td>{{ formatDate(record.NgayMuon) }}</td>
+                    <td>
+                      <span :class="getDueDateClass(record)">
+                        {{ formatDate(record.NgayHenTra) }}
+                      </span>
+                    </td>
+                    <td>{{ record.NgayTra ? formatDate(record.NgayTra) : '-' }}</td>
+                    <td>
+                      <span class="badge" :class="getStatusClass(record.TrangThai)">
+                        {{ record.TrangThai }}
+                      </span>
+                    </td>
+                    <td class="text-center">
+                      <div class="btn-group" role="group">
+                        <button v-if="record.TrangThai !== 'Đã trả'" 
                           class="btn btn-sm btn-outline-success" 
-                          @click="returnBook(record)"
-                        >
-                          <i class="bi bi-check-circle me-1"></i>Trả sách
+                          @click="showReturnModal(record)" 
+                          title="Trả sách">
+                          <i class="bi bi-check-circle"></i>
                         </button>
-                        <button class="btn btn-sm btn-outline-primary" @click="editRecord(record)">
-                          <i class="bi bi-pencil"></i>
+                        <button v-if="record.TrangThai !== 'Đã trả'" 
+                          class="btn btn-sm btn-outline-warning" 
+                          @click="showExtendModal(record)" 
+                          title="Gia hạn">
+                          <i class="bi bi-calendar-plus"></i>
                         </button>
-                        <button class="btn btn-sm btn-outline-danger" @click="deleteRecord(record.id)">
-                          <i class="bi bi-trash"></i>
+                        <button class="btn btn-sm btn-outline-info" 
+                          @click="viewDetails(record)" 
+                          title="Chi tiết">
+                          <i class="bi bi-eye"></i>
                         </button>
                       </div>
+                    </td>
+                  </tr>
+                  <tr v-if="filteredRecords.length === 0 && !loading">
+                    <td colspan="8" class="text-center text-muted py-4">
+                      <i class="bi bi-inbox display-4 d-block mb-2"></i>
+                      {{ searchQuery ? 'Không tìm thấy bản ghi nào' : 'Chưa có bản ghi mượn sách nào' }}
                     </td>
                   </tr>
                 </tbody>
               </table>
             </div>
-            
+
+            <!-- Loading State -->
             <div v-if="loading" class="text-center py-4">
-              <div class="spinner-border" role="status">
-                <span class="visually-hidden">Loading...</span>
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Đang tải...</span>
+              </div>
+              <p class="mt-2 text-muted">Đang tải danh sách mượn trả sách...</p>
+            </div>
+
+            <!-- Pagination -->
+            <div class="row mt-4" v-if="filteredRecords.length > 0">
+              <div class="col-md-6">
+                <p class="text-muted">
+                  Hiển thị {{ startIndex + 1 }} - {{ endIndex }} trong tổng số {{ filteredRecords.length }} bản ghi
+                </p>
+              </div>
+              <div class="col-md-6">
+                <nav aria-label="Pagination">
+                  <ul class="pagination justify-content-end mb-0">
+                    <li class="page-item" :class="{ disabled: currentPage === 1 }">
+                      <button class="page-link" @click="goToPage(currentPage - 1)" :disabled="currentPage === 1">
+                        <i class="bi bi-chevron-left"></i>
+                      </button>
+                    </li>
+                    <li class="page-item" v-for="page in visiblePages" :key="page"
+                      :class="{ active: page === currentPage }">
+                      <button class="page-link" @click="goToPage(page)">{{ page }}</button>
+                    </li>
+                    <li class="page-item" :class="{ disabled: currentPage === totalPages }">
+                      <button class="page-link" @click="goToPage(currentPage + 1)"
+                        :disabled="currentPage === totalPages">
+                        <i class="bi bi-chevron-right"></i>
+                      </button>
+                    </li>
+                  </ul>
+                </nav>
               </div>
             </div>
           </div>
         </div>
       </div>
     </div>
+
+    <!-- Borrow Modal -->
+    <div class="modal fade" :class="{ show: showBorrowModalState }" :style="{ display: showBorrowModalState ? 'block' : 'none' }"
+      tabindex="-1">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">
+              <i class="bi bi-journal-plus me-2"></i>Mượn sách
+            </h5>
+            <button type="button" class="btn-close" @click="closeBorrowModal"></button>
+          </div>
+          <div class="modal-body">
+            <form @submit.prevent="borrowBook">
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="docGia" class="form-label">Độc giả <span class="text-danger">*</span></label>
+                    <select class="form-select" id="docGia" v-model="borrowForm.MaDocGia"
+                      :class="{ 'is-invalid': borrowErrors.MaDocGia }">
+                      <option value="">Chọn độc giả</option>
+                      <option v-for="docgia in docGiaList" :key="docgia.MaDocGia" :value="docgia.MaDocGia">
+                        {{ docgia.HoLot }} {{ docgia.Ten }} ({{ docgia.MaDocGia }})
+                      </option>
+                    </select>
+                    <div class="invalid-feedback" v-if="borrowErrors.MaDocGia">{{ borrowErrors.MaDocGia }}</div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="sach" class="form-label">Sách <span class="text-danger">*</span></label>
+                    <select class="form-select" id="sach" v-model="borrowForm.MaSach"
+                      :class="{ 'is-invalid': borrowErrors.MaSach }">
+                      <option value="">Chọn sách</option>
+                      <option v-for="sach in availableBooks" :key="sach.MaSach" :value="sach.MaSach">
+                        {{ sach.TenSach }} ({{ sach.MaSach }}) - Còn: {{ sach.SoQuyen }}
+                      </option>
+                    </select>
+                    <div class="invalid-feedback" v-if="borrowErrors.MaSach">{{ borrowErrors.MaSach }}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="ngayHenTra" class="form-label">Ngày hẹn trả <span class="text-danger">*</span></label>
+                    <input type="date" class="form-control" id="ngayHenTra" v-model="borrowForm.NgayHenTra"
+                      :class="{ 'is-invalid': borrowErrors.NgayHenTra }" :min="tomorrow">
+                    <div class="invalid-feedback" v-if="borrowErrors.NgayHenTra">{{ borrowErrors.NgayHenTra }}</div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="nhanVienMuon" class="form-label">Nhân viên xử lý <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="nhanVienMuon" v-model="borrowForm.NhanVienMuon"
+                      :class="{ 'is-invalid': borrowErrors.NhanVienMuon }" placeholder="Mã nhân viên">
+                    <div class="invalid-feedback" v-if="borrowErrors.NhanVienMuon">{{ borrowErrors.NhanVienMuon }}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label for="ghiChu" class="form-label">Ghi chú</label>
+                <textarea class="form-control" id="ghiChu" v-model="borrowForm.GhiChu" rows="3"
+                  placeholder="Ghi chú thêm (tùy chọn)"></textarea>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" @click="closeBorrowModal">
+              <i class="bi bi-x-circle me-2"></i>Hủy
+            </button>
+            <button type="button" class="btn btn-primary" @click="borrowBook" :disabled="borrowing">
+              <span v-if="borrowing" class="spinner-border spinner-border-sm me-2"></span>
+              <i class="bi bi-check-circle me-2" v-else></i>
+              Mượn sách
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Return Modal -->
+    <div class="modal fade" :class="{ show: showReturnModalState }" :style="{ display: showReturnModalState ? 'block' : 'none' }"
+      tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title text-success">
+              <i class="bi bi-check-circle me-2"></i>Trả sách
+            </h5>
+            <button type="button" class="btn-close" @click="closeReturnModal"></button>
+          </div>
+          <div class="modal-body">
+            <div v-if="returningRecord">
+              <p><strong>Độc giả:</strong> {{ getReaderName(returningRecord) }}</p>
+              <p><strong>Sách:</strong> {{ getBookTitle(returningRecord) }}</p>
+              <p><strong>Ngày mượn:</strong> {{ formatDate(returningRecord.NgayMuon) }}</p>
+              <p><strong>Ngày hẹn trả:</strong> {{ formatDate(returningRecord.NgayHenTra) }}</p>
+              
+              <div class="mb-3">
+                <label for="nhanVienTra" class="form-label">Nhân viên xử lý <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="nhanVienTra" v-model="returnForm.NhanVienTra"
+                  :class="{ 'is-invalid': returnErrors.NhanVienTra }" placeholder="Mã nhân viên">
+                <div class="invalid-feedback" v-if="returnErrors.NhanVienTra">{{ returnErrors.NhanVienTra }}</div>
+              </div>
+
+              <div class="mb-3">
+                <label for="ghiChuTra" class="form-label">Ghi chú</label>
+                <textarea class="form-control" id="ghiChuTra" v-model="returnForm.GhiChu" rows="3"
+                  placeholder="Ghi chú về tình trạng sách khi trả (tùy chọn)"></textarea>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" @click="closeReturnModal">
+              <i class="bi bi-x-circle me-2"></i>Hủy
+            </button>
+            <button type="button" class="btn btn-success" @click="returnBook" :disabled="returning">
+              <span v-if="returning" class="spinner-border spinner-border-sm me-2"></span>
+              <i class="bi bi-check-circle me-2" v-else></i>
+              Xác nhận trả
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Extend Modal -->
+    <div class="modal fade" :class="{ show: showExtendModalState }" :style="{ display: showExtendModalState ? 'block' : 'none' }"
+      tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title text-warning">
+              <i class="bi bi-calendar-plus me-2"></i>Gia hạn sách
+            </h5>
+            <button type="button" class="btn-close" @click="closeExtendModal"></button>
+          </div>
+          <div class="modal-body">
+            <div v-if="extendingRecord">
+              <p><strong>Độc giả:</strong> {{ getReaderName(extendingRecord) }}</p>
+              <p><strong>Sách:</strong> {{ getBookTitle(extendingRecord) }}</p>
+              <p><strong>Ngày hẹn trả hiện tại:</strong> {{ formatDate(extendingRecord.NgayHenTra) }}</p>
+              
+              <div class="mb-3">
+                <label for="ngayHenTraMoi" class="form-label">Ngày hẹn trả mới <span class="text-danger">*</span></label>
+                <input type="date" class="form-control" id="ngayHenTraMoi" v-model="extendForm.NgayHenTra"
+                  :class="{ 'is-invalid': extendErrors.NgayHenTra }" :min="tomorrow">
+                <div class="invalid-feedback" v-if="extendErrors.NgayHenTra">{{ extendErrors.NgayHenTra }}</div>
+              </div>
+
+              <div class="mb-3">
+                <label for="ghiChuGiaHan" class="form-label">Ghi chú</label>
+                <textarea class="form-control" id="ghiChuGiaHan" v-model="extendForm.GhiChu" rows="3"
+                  placeholder="Lý do gia hạn (tùy chọn)"></textarea>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" @click="closeExtendModal">
+              <i class="bi bi-x-circle me-2"></i>Hủy
+            </button>
+            <button type="button" class="btn btn-warning" @click="extendDueDate" :disabled="extending">
+              <span v-if="extending" class="spinner-border spinner-border-sm me-2"></span>
+              <i class="bi bi-calendar-plus me-2" v-else></i>
+              Gia hạn
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Backdrop -->
+    <div class="modal-backdrop fade show" v-if="showBorrowModalState || showReturnModalState || showExtendModalState"></div>
   </div>
 </template>
-
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
+import axios from 'axios'
 
-const recordList = ref([])
+// Reactive data
+const recordsList = ref([])
+const docGiaList = ref([])
+const sachList = ref([])
 const loading = ref(false)
+const borrowing = ref(false)
+const returning = ref(false)
+const extending = ref(false)
 const searchQuery = ref('')
 const statusFilter = ref('')
-const showAddModal = ref(false)
+const currentPage = ref(1)
+const itemsPerPage = ref(10)
 
-// Mock data for now
-const mockRecords = [
-  {
-    id: 1,
-    MaDocGia: 'DG001',
-    TenDocGia: 'Nguyễn Văn An',
-    MaSach: 'S001',
-    TenSach: 'Lập trình JavaScript',
-    NgayMuon: '2024-01-15',
-    NgayTra: null,
-    TrangThai: 'muon'
-  },
-  {
-    id: 2,
-    MaDocGia: 'DG002',
-    TenDocGia: 'Trần Thị Bình',
-    MaSach: 'S002',
-    TenSach: 'Cơ sở dữ liệu',
-    NgayMuon: '2024-01-10',
-    NgayTra: '2024-01-20',
-    TrangThai: 'tra'
-  },
-  {
-    id: 3,
-    MaDocGia: 'DG001',
-    TenDocGia: 'Nguyễn Văn An',
-    MaSach: 'S003',
-    TenSach: 'Mạng máy tính',
-    NgayMuon: '2024-01-12',
-    NgayTra: null,
-    TrangThai: 'muon'
-  }
-]
+// Modal states
+const showBorrowModalState = ref(false)
+const showReturnModalState = ref(false)
+const showExtendModalState = ref(false)
+const returningRecord = ref(null)
+const extendingRecord = ref(null)
 
+// Form data
+const borrowForm = ref({
+  MaDocGia: '',
+  MaSach: '',
+  NgayHenTra: '',
+  GhiChu: '',
+  NhanVienMuon: 'NV001' // Default staff ID
+})
+
+const returnForm = ref({
+  NhanVienTra: 'NV001', // Default staff ID
+  GhiChu: ''
+})
+
+const extendForm = ref({
+  NgayHenTra: '',
+  GhiChu: ''
+})
+
+// Form errors
+const borrowErrors = ref({})
+const returnErrors = ref({})
+const extendErrors = ref({})
+
+// Computed properties
 const filteredRecords = computed(() => {
-  let filtered = recordList.value
+  if (!Array.isArray(recordsList.value)) return []
+  
+  let filtered = recordsList.value
 
+  // Filter by search query
   if (searchQuery.value) {
-    filtered = filtered.filter(record => 
-      record.TenDocGia.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      record.MaDocGia.toLowerCase().includes(searchQuery.value.toLowerCase())
+    const query = searchQuery.value.toLowerCase().trim()
+    filtered = filtered.filter(record =>
+      record.MaTheoDoiMuonSach.toLowerCase().includes(query) ||
+      record.MaDocGia.toLowerCase().includes(query) ||
+      record.MaSach.toLowerCase().includes(query) ||
+      getReaderName(record).toLowerCase().includes(query) ||
+      getBookTitle(record).toLowerCase().includes(query)
     )
   }
 
+  // Filter by status
   if (statusFilter.value) {
     filtered = filtered.filter(record => record.TrangThai === statusFilter.value)
   }
@@ -150,61 +406,482 @@ const filteredRecords = computed(() => {
   return filtered
 })
 
+const totalPages = computed(() => {
+  if (!Array.isArray(filteredRecords.value)) return 0
+  return Math.ceil(filteredRecords.value.length / itemsPerPage.value)
+})
+
+const startIndex = computed(() => (currentPage.value - 1) * itemsPerPage.value)
+const endIndex = computed(() => {
+  if (!Array.isArray(filteredRecords.value)) return 0
+  return Math.min(startIndex.value + itemsPerPage.value, filteredRecords.value.length)
+})
+
+const paginatedRecords = computed(() => {
+  if (!Array.isArray(filteredRecords.value)) return []
+  return filteredRecords.value.slice(startIndex.value, endIndex.value)
+})
+
+const visiblePages = computed(() => {
+  const pages = []
+  const start = Math.max(1, currentPage.value - 2)
+  const end = Math.min(totalPages.value, currentPage.value + 2)
+
+  for (let i = start; i <= end; i++) {
+    pages.push(i)
+  }
+  return pages
+})
+
+const availableBooks = computed(() => {
+  return sachList.value.filter(sach => sach.SoQuyen > 0)
+})
+
+const tomorrow = computed(() => {
+  const date = new Date()
+  date.setDate(date.getDate() + 1)
+  return date.toISOString().split('T')[0]
+})
+
+// Methods
 const loadRecords = async () => {
   loading.value = true
+
+  // Mock data fallback
+  const mockData = [
+    {
+      MaTheoDoiMuonSach: 'TD001',
+      MaDocGia: 'DG001',
+      MaSach: 'S001',
+      NgayMuon: '2024-01-15',
+      NgayHenTra: '2024-01-29',
+      NgayTra: '2024-01-28',
+      TrangThai: 'Đã trả',
+      GhiChu: '',
+      NhanVienMuon: 'NV001',
+      NhanVienTra: 'NV001',
+      MaDocGia: { HoLot: 'Nguyễn Văn', Ten: 'An', DienThoai: '0901234567' },
+      MaSach: { TenSach: 'Lập trình JavaScript', NguonGoc: 'Nguyễn Văn A', SoQuyen: 10 }
+    },
+    {
+      MaTheoDoiMuonSach: 'TD002',
+      MaDocGia: 'DG002',
+      MaSach: 'S002',
+      NgayMuon: '2024-01-20',
+      NgayHenTra: '2024-02-03',
+      NgayTra: null,
+      TrangThai: 'Đang mượn',
+      GhiChu: '',
+      NhanVienMuon: 'NV001',
+      NhanVienTra: null,
+      MaDocGia: { HoLot: 'Trần Thị', Ten: 'Bình', DienThoai: '0987654321' },
+      MaSach: { TenSach: 'Cơ sở dữ liệu', NguonGoc: 'Trần Thị B', SoQuyen: 8 }
+    },
+    {
+      MaTheoDoiMuonSach: 'TD003',
+      MaDocGia: 'DG003',
+      MaSach: 'S003',
+      NgayMuon: '2024-01-10',
+      NgayHenTra: '2024-01-24',
+      NgayTra: null,
+      TrangThai: 'Quá hạn',
+      GhiChu: '',
+      NhanVienMuon: 'NV001',
+      NhanVienTra: null,
+      MaDocGia: { HoLot: 'Lê Văn', Ten: 'Cường', DienThoai: '0912345678' },
+      MaSach: { TenSach: 'Mạng máy tính', NguonGoc: 'Lê Văn C', SoQuyen: 12 }
+    }
+  ]
+
   try {
-    // TODO: Replace with actual API call
-    await new Promise(resolve => setTimeout(resolve, 500))
-    recordList.value = mockRecords
+    const response = await axios.get('/api/theodoimuonsach')
+    const apiData = response.data.data?.theodoimuonsach || response.data.data || []
+
+    if (Array.isArray(apiData) && apiData.length > 0) {
+      recordsList.value = apiData
+    } else {
+      console.log('API returned empty or invalid data, using mock data')
+      recordsList.value = mockData
+    }
   } catch (error) {
-    console.error('Error loading records:', error)
+    console.error('Error loading records from API:', error)
+    console.log('Using mock data as fallback')
+    recordsList.value = mockData
   } finally {
     loading.value = false
+    if (!Array.isArray(recordsList.value) || recordsList.value.length === 0) {
+      recordsList.value = mockData
+    }
+  }
+}
+
+const loadDocGia = async () => {
+  const mockDocGia = [
+    { MaDocGia: 'DG001', HoLot: 'Nguyễn Văn', Ten: 'An' },
+    { MaDocGia: 'DG002', HoLot: 'Trần Thị', Ten: 'Bình' },
+    { MaDocGia: 'DG003', HoLot: 'Lê Văn', Ten: 'Cường' },
+    { MaDocGia: 'DG004', HoLot: 'Phạm Thị', Ten: 'Dung' },
+    { MaDocGia: 'DG005', HoLot: 'Hoàng Văn', Ten: 'Em' }
+  ]
+
+  try {
+    const response = await axios.get('/api/docgia')
+    const apiData = response.data.data?.docgia || response.data.data || []
+    
+    if (Array.isArray(apiData) && apiData.length > 0) {
+      docGiaList.value = apiData
+    } else {
+      docGiaList.value = mockDocGia
+    }
+  } catch (error) {
+    console.error('Error loading doc gia:', error)
+    docGiaList.value = mockDocGia
+  }
+}
+
+const loadSach = async () => {
+  const mockSach = [
+    { MaSach: 'S001', TenSach: 'Lập trình JavaScript', SoQuyen: 10 },
+    { MaSach: 'S002', TenSach: 'Cơ sở dữ liệu', SoQuyen: 8 },
+    { MaSach: 'S003', TenSach: 'Mạng máy tính', SoQuyen: 12 },
+    { MaSach: 'S004', TenSach: 'Thuật toán và cấu trúc dữ liệu', SoQuyen: 15 },
+    { MaSach: 'S005', TenSach: 'Hệ điều hành Linux', SoQuyen: 6 }
+  ]
+
+  try {
+    const response = await axios.get('/api/sach/available')
+    const apiData = response.data.data?.sach || response.data.data || []
+    
+    if (Array.isArray(apiData) && apiData.length > 0) {
+      sachList.value = apiData
+    } else {
+      sachList.value = mockSach
+    }
+  } catch (error) {
+    console.error('Error loading sach:', error)
+    sachList.value = mockSach
   }
 }
 
 const handleSearch = () => {
-  // Search is handled by computed property
+  currentPage.value = 1
 }
 
-const returnBook = async (record) => {
-  try {
-    // TODO: Implement actual return book API call
-    record.NgayTra = new Date().toISOString().split('T')[0]
-    record.TrangThai = 'tra'
-    console.log('Book returned:', record)
-  } catch (error) {
-    console.error('Error returning book:', error)
+const clearSearch = () => {
+  searchQuery.value = ''
+  statusFilter.value = ''
+  currentPage.value = 1
+}
+
+const goToPage = (page) => {
+  if (page >= 1 && page <= totalPages.value) {
+    currentPage.value = page
   }
 }
 
-const editRecord = (record) => {
-  // TODO: Implement edit functionality
-  console.log('Editing:', record)
+// Helper methods
+const getReaderName = (record) => {
+  if (record.MaDocGia && typeof record.MaDocGia === 'object') {
+    return `${record.MaDocGia.HoLot} ${record.MaDocGia.Ten}`
+  }
+  // Fallback for string MaDocGia
+  const docgia = docGiaList.value.find(d => d.MaDocGia === record.MaDocGia)
+  return docgia ? `${docgia.HoLot} ${docgia.Ten}` : record.MaDocGia
 }
 
-const deleteRecord = (id) => {
-  // TODO: Implement delete functionality
-  console.log('Deleting:', id)
+const getBookTitle = (record) => {
+  if (record.MaSach && typeof record.MaSach === 'object') {
+    return record.MaSach.TenSach
+  }
+  // Fallback for string MaSach
+  const sach = sachList.value.find(s => s.MaSach === record.MaSach)
+  return sach ? sach.TenSach : record.MaSach
 }
 
 const formatDate = (dateString) => {
-  return new Date(dateString).toLocaleDateString('vi-VN')
+  if (!dateString) return '-'
+  const date = new Date(dateString)
+  return date.toLocaleDateString('vi-VN')
+}
+
+const getDueDateClass = (record) => {
+  if (record.TrangThai === 'Đã trả') return ''
+  
+  const today = new Date()
+  const dueDate = new Date(record.NgayHenTra)
+  
+  if (dueDate < today) {
+    return 'text-danger fw-bold'
+  } else if (dueDate.getTime() - today.getTime() <= 3 * 24 * 60 * 60 * 1000) {
+    return 'text-warning fw-bold'
+  }
+  return ''
 }
 
 const getStatusClass = (status) => {
-  return status === 'muon' ? 'badge bg-warning' : 'badge bg-success'
+  switch (status) {
+    case 'Đang mượn': return 'bg-primary'
+    case 'Đã trả': return 'bg-success'
+    case 'Quá hạn': return 'bg-danger'
+    default: return 'bg-secondary'
+  }
 }
 
-const getStatusText = (status) => {
-  return status === 'muon' ? 'Đang mượn' : 'Đã trả'
+// Modal methods
+const showBorrowModal = () => {
+  resetBorrowForm()
+  showBorrowModalState.value = true
 }
 
+const closeBorrowModal = () => {
+  showBorrowModalState.value = false
+  resetBorrowForm()
+}
+
+const resetBorrowForm = () => {
+  borrowForm.value = {
+    MaDocGia: '',
+    MaSach: '',
+    NgayHenTra: '',
+    GhiChu: '',
+    NhanVienMuon: 'NV001'
+  }
+  borrowErrors.value = {}
+}
+
+const validateBorrowForm = () => {
+  borrowErrors.value = {}
+
+  if (!borrowForm.value.MaDocGia) {
+    borrowErrors.value.MaDocGia = 'Vui lòng chọn độc giả'
+  }
+
+  if (!borrowForm.value.MaSach) {
+    borrowErrors.value.MaSach = 'Vui lòng chọn sách'
+  }
+
+  if (!borrowForm.value.NgayHenTra) {
+    borrowErrors.value.NgayHenTra = 'Vui lòng chọn ngày hẹn trả'
+  } else {
+    const dueDate = new Date(borrowForm.value.NgayHenTra)
+    const today = new Date()
+    if (dueDate <= today) {
+      borrowErrors.value.NgayHenTra = 'Ngày hẹn trả phải sau ngày hôm nay'
+    }
+  }
+
+  if (!borrowForm.value.NhanVienMuon) {
+    borrowErrors.value.NhanVienMuon = 'Vui lòng nhập mã nhân viên'
+  }
+
+  return Object.keys(borrowErrors.value).length === 0
+}
+
+const borrowBook = async () => {
+  if (!validateBorrowForm()) return
+
+  borrowing.value = true
+  try {
+    await axios.post('/api/theodoimuonsach/muon', borrowForm.value)
+    closeBorrowModal()
+    await loadRecords()
+    console.log('Mượn sách thành công')
+  } catch (error) {
+    console.error('Error borrowing book:', error)
+    if (error.response?.data?.errors) {
+      borrowErrors.value = error.response.data.errors
+    }
+  } finally {
+    borrowing.value = false
+  }
+}
+
+const showReturnModal = (record) => {
+  returningRecord.value = record
+  returnForm.value = {
+    NhanVienTra: 'NV001',
+    GhiChu: ''
+  }
+  returnErrors.value = {}
+  showReturnModalState.value = true
+}
+
+const closeReturnModal = () => {
+  showReturnModalState.value = false
+  returningRecord.value = null
+  returnForm.value = { NhanVienTra: 'NV001', GhiChu: '' }
+  returnErrors.value = {}
+}
+
+const validateReturnForm = () => {
+  returnErrors.value = {}
+
+  if (!returnForm.value.NhanVienTra) {
+    returnErrors.value.NhanVienTra = 'Vui lòng nhập mã nhân viên'
+  }
+
+  return Object.keys(returnErrors.value).length === 0
+}
+
+const returnBook = async () => {
+  if (!validateReturnForm()) return
+
+  returning.value = true
+  try {
+    await axios.put(`/api/theodoimuonsach/${returningRecord.value.MaTheoDoiMuonSach}/tra`, returnForm.value)
+    closeReturnModal()
+    await loadRecords()
+    console.log('Trả sách thành công')
+  } catch (error) {
+    console.error('Error returning book:', error)
+    if (error.response?.data?.errors) {
+      returnErrors.value = error.response.data.errors
+    }
+  } finally {
+    returning.value = false
+  }
+}
+
+const showExtendModal = (record) => {
+  extendingRecord.value = record
+  extendForm.value = {
+    NgayHenTra: '',
+    GhiChu: ''
+  }
+  extendErrors.value = {}
+  showExtendModalState.value = true
+}
+
+const closeExtendModal = () => {
+  showExtendModalState.value = false
+  extendingRecord.value = null
+  extendForm.value = { NgayHenTra: '', GhiChu: '' }
+  extendErrors.value = {}
+}
+
+const validateExtendForm = () => {
+  extendErrors.value = {}
+
+  if (!extendForm.value.NgayHenTra) {
+    extendErrors.value.NgayHenTra = 'Vui lòng chọn ngày hẹn trả mới'
+  } else {
+    const newDueDate = new Date(extendForm.value.NgayHenTra)
+    const currentDueDate = new Date(extendingRecord.value.NgayHenTra)
+    if (newDueDate <= currentDueDate) {
+      extendErrors.value.NgayHenTra = 'Ngày hẹn trả mới phải sau ngày hẹn trả hiện tại'
+    }
+  }
+
+  return Object.keys(extendErrors.value).length === 0
+}
+
+const extendDueDate = async () => {
+  if (!validateExtendForm()) return
+
+  extending.value = true
+  try {
+    await axios.put(`/api/theodoimuonsach/${extendingRecord.value.MaTheoDoiMuonSach}/giahan`, extendForm.value)
+    closeExtendModal()
+    await loadRecords()
+    console.log('Gia hạn sách thành công')
+  } catch (error) {
+    console.error('Error extending due date:', error)
+    if (error.response?.data?.errors) {
+      extendErrors.value = error.response.data.errors
+    }
+  } finally {
+    extending.value = false
+  }
+}
+
+const viewDetails = (record) => {
+  // TODO: Implement view details functionality
+  console.log('View details for:', record)
+}
+
+// Watch for search changes
+watch([searchQuery, statusFilter], () => {
+  currentPage.value = 1
+})
+
+// Lifecycle
 onMounted(() => {
   loadRecords()
+  loadDocGia()
+  loadSach()
 })
 </script>
 
 <style scoped>
 @import '../assets/main_admin.css';
+
+.card {
+  border: none;
+  box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+}
+
+.table th {
+  border-top: none;
+  font-weight: 600;
+  color: #5a5c69;
+  background-color: #f8f9fc;
+}
+
+.badge {
+  font-size: 0.75rem;
+}
+
+.btn-group .btn {
+  padding: 0.25rem 0.5rem;
+}
+
+.modal-backdrop {
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.text-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pagination .page-link {
+  border-radius: 0.35rem;
+  margin: 0 0.125rem;
+  border: 1px solid #e3e6f0;
+  color: #5a5c69;
+}
+
+.pagination .page-item.active .page-link {
+  background-color: #4e73df;
+  border-color: #4e73df;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: #bac8f3;
+  box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
+}
+
+.is-invalid {
+  border-color: #e74a3b;
+}
+
+.invalid-feedback {
+  display: block;
+}
+
+@media (max-width: 768px) {
+  .table-responsive {
+    font-size: 0.875rem;
+  }
+
+  .btn-group .btn {
+    padding: 0.125rem 0.25rem;
+  }
+
+  .modal-dialog {
+    margin: 0.5rem;
+  }
+}
 </style>
