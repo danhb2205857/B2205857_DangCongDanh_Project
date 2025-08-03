@@ -1,35 +1,27 @@
 import mongoose from 'mongoose';
 
-const TheoDoiMuonSachSchema = new mongoose.Schema({
-  MaDocGia: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'DocGia',
-    required: [true, 'Mã độc giả là bắt buộc']
+const theoDoiMuonSachSchema = new mongoose.Schema({
+  MaTheoDoiMuonSach: {
+    type: String,
+    required: [true, 'Mã theo dõi mượn sách là bắt buộc'],
+    unique: true,
+    trim: true,
+    match: [/^TD\d{3,}$/, 'Mã theo dõi phải có định dạng TD001, TD002, ...']
   },
-  MaSach: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'Sach',
-    required: [true, 'Mã sách là bắt buộc']
+  MaDocGia: {
+    type: String,
+    required: [true, 'Mã độc giả là bắt buộc'],
+    ref: 'DocGia'
   },
-  NgayMuon: { 
-    type: Date, 
-    required: [true, 'Ngày mượn là bắt buộc'],
-    default: Date.now,
-    validate: {
-      validator: function(value) {
-        return value <= new Date();
-      },
-      message: 'Ngày mượn không được là ngày tương lai'
-    }
+  MaSach: {
+    type: String,
+    required: [true, 'Mã sách là bắt buộc'],
+    ref: 'Sach'
   },
-  NgayTra: { 
+  NgayMuon: {
     type: Date,
-    validate: {
-      validator: function(value) {
-        return !value || value >= this.NgayMuon;
-      },
-      message: 'Ngày trả phải sau ngày mượn'
-    }
+    required: [true, 'Ngày mượn là bắt buộc'],
+    default: Date.now
   },
   NgayHenTra: {
     type: Date,
@@ -41,106 +33,118 @@ const TheoDoiMuonSachSchema = new mongoose.Schema({
       message: 'Ngày hẹn trả phải sau ngày mượn'
     }
   },
+  NgayTra: {
+    type: Date,
+    default: null
+  },
   TrangThai: {
     type: String,
     enum: {
-      values: ['muon', 'tra', 'qua_han'],
-      message: 'Trạng thái không hợp lệ'
+      values: ['Đang mượn', 'Đã trả', 'Quá hạn'],
+      message: 'Trạng thái phải là Đang mượn, Đã trả hoặc Quá hạn'
     },
-    default: 'muon'
+    default: 'Đang mượn'
   },
   GhiChu: {
     type: String,
-    trim: true,
-    maxlength: [500, 'Ghi chú không được vượt quá 500 ký tự']
+    maxLength: [500, 'Ghi chú không được quá 500 ký tự'],
+    trim: true
   },
   NhanVienMuon: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'NhanVien',
-    required: [true, 'Nhân viên xử lý mượn là bắt buộc']
+    type: String,
+    required: [true, 'Nhân viên xử lý mượn là bắt buộc'],
+    ref: 'NhanVien'
   },
   NhanVienTra: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: String,
     ref: 'NhanVien'
   }
 }, {
   timestamps: true,
-  collection: 'theodoimuonsachs'
+  collection: 'theodoimuonsach'
 });
 
-// Compound indexes
-TheoDoiMuonSachSchema.index({ MaDocGia: 1, MaSach: 1 });
-TheoDoiMuonSachSchema.index({ NgayMuon: 1 });
-TheoDoiMuonSachSchema.index({ NgayTra: 1 });
-TheoDoiMuonSachSchema.index({ TrangThai: 1 });
-TheoDoiMuonSachSchema.index({ NgayHenTra: 1 });
-
-// Virtual for loan duration
-TheoDoiMuonSachSchema.virtual('SoNgayMuon').get(function() {
-  const endDate = this.NgayTra || new Date();
-  const startDate = this.NgayMuon;
-  const diffTime = Math.abs(endDate - startDate);
-  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-});
+// Indexes for performance
+theoDoiMuonSachSchema.index({ MaTheoDoiMuonSach: 1 });
+theoDoiMuonSachSchema.index({ MaDocGia: 1 });
+theoDoiMuonSachSchema.index({ MaSach: 1 });
+theoDoiMuonSachSchema.index({ NgayMuon: -1 });
+theoDoiMuonSachSchema.index({ TrangThai: 1 });
+theoDoiMuonSachSchema.index({ NgayHenTra: 1 });
 
 // Virtual for overdue status
-TheoDoiMuonSachSchema.virtual('QuaHan').get(function() {
-  if (this.TrangThai === 'tra') return false;
+theoDoiMuonSachSchema.virtual('IsOverdue').get(function() {
+  if (this.TrangThai === 'Đã trả') return false;
   return new Date() > this.NgayHenTra;
 });
 
-// Virtual for days overdue
-TheoDoiMuonSachSchema.virtual('SoNgayQuaHan').get(function() {
-  if (!this.QuaHan) return 0;
-  const today = new Date();
-  const diffTime = today - this.NgayHenTra;
+// Virtual for days borrowed
+theoDoiMuonSachSchema.virtual('SoNgayMuon').get(function() {
+  const endDate = this.NgayTra || new Date();
+  const diffTime = Math.abs(endDate - this.NgayMuon);
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 });
 
-// Ensure virtual fields are serialized
-TheoDoiMuonSachSchema.set('toJSON', { virtuals: true });
-TheoDoiMuonSachSchema.set('toObject', { virtuals: true });
+// Virtual for days overdue
+theoDoiMuonSachSchema.virtual('SoNgayQuaHan').get(function() {
+  if (this.TrangThai === 'Đã trả') return 0;
+  const today = new Date();
+  if (today <= this.NgayHenTra) return 0;
+  const diffTime = Math.abs(today - this.NgayHenTra);
+  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+});
 
-// Pre-save middleware
-TheoDoiMuonSachSchema.pre('save', function(next) {
-  // Auto-set NgayHenTra if not provided (default 14 days)
-  if (!this.NgayHenTra && this.NgayMuon) {
-    this.NgayHenTra = new Date(this.NgayMuon.getTime() + (14 * 24 * 60 * 60 * 1000));
-  }
-  
-  // Auto-update status based on dates
+// Pre-save middleware to update status
+theoDoiMuonSachSchema.pre('save', function(next) {
   if (this.NgayTra) {
-    this.TrangThai = 'tra';
+    this.TrangThai = 'Đã trả';
   } else if (new Date() > this.NgayHenTra) {
-    this.TrangThai = 'qua_han';
+    this.TrangThai = 'Quá hạn';
   } else {
-    this.TrangThai = 'muon';
+    this.TrangThai = 'Đang mượn';
   }
-  
   next();
 });
 
 // Static method to find overdue books
-TheoDoiMuonSachSchema.statics.findOverdue = function() {
+theoDoiMuonSachSchema.statics.findOverdue = function() {
   return this.find({
-    TrangThai: { $in: ['muon', 'qua_han'] },
+    TrangThai: { $ne: 'Đã trả' },
     NgayHenTra: { $lt: new Date() }
-  }).populate('MaDocGia MaSach');
+  });
 };
 
-// Static method to find books borrowed by reader
-TheoDoiMuonSachSchema.statics.findByReader = function(docGiaId) {
-  return this.find({ MaDocGia: docGiaId })
-    .populate('MaSach')
+// Static method to find books by reader
+theoDoiMuonSachSchema.statics.findByReader = function(maDocGia) {
+  return this.find({ MaDocGia: maDocGia })
+    .populate('MaSach', 'TenSach NguonGoc')
     .sort({ NgayMuon: -1 });
 };
 
-// Instance method to return book
-TheoDoiMuonSachSchema.methods.returnBook = function(nhanVienId) {
+// Static method to find books by book ID
+theoDoiMuonSachSchema.statics.findByBook = function(maSach) {
+  return this.find({ MaSach: maSach })
+    .populate('MaDocGia', 'HoLot Ten')
+    .sort({ NgayMuon: -1 });
+};
+
+// Method to return book
+theoDoiMuonSachSchema.methods.returnBook = function(nhanVienTra, ghiChu) {
   this.NgayTra = new Date();
-  this.TrangThai = 'tra';
-  this.NhanVienTra = nhanVienId;
+  this.NhanVienTra = nhanVienTra;
+  this.TrangThai = 'Đã trả';
+  if (ghiChu) this.GhiChu = ghiChu;
   return this.save();
 };
 
-export default mongoose.model('TheoDoiMuonSach', TheoDoiMuonSachSchema);
+// Method to extend due date
+theoDoiMuonSachSchema.methods.extendDueDate = function(newDueDate, ghiChu) {
+  if (this.TrangThai === 'Đã trả') {
+    throw new Error('Không thể gia hạn sách đã trả');
+  }
+  this.NgayHenTra = newDueDate;
+  if (ghiChu) this.GhiChu = ghiChu;
+  return this.save();
+};
+
+export default mongoose.model('TheoDoiMuonSach', theoDoiMuonSachSchema);
