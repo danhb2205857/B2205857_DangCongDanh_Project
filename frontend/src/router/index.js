@@ -1,16 +1,18 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import Home from '../views/Home.vue';
-import Login from '../views/Login.vue';
-import Register from '../views/Register.vue';
-import UserList from '../views/UserList.vue';
-import DocGia from '../views/DocGia.vue';
-import Dashboard from '../views/Dashboard.vue';
-import Sach from '../views/Sach.vue';
-import SachNew from '../views/SachNew.vue';
-import NhaXuatBan from '../views/NhaXuatBan.vue';
-import NhaXuatBanNew from '../views/NhaXuatBanNew.vue';
-import TheoDoiMuonSach from '../views/TheoDoiMuonSach.vue';
-import AdminLayout from '../layouts/AdminLayout.vue';
+
+// Lazy load components for better performance
+const Home = () => import('../views/Home.vue');
+const Login = () => import('../views/Login.vue');
+const Register = () => import('../views/Register.vue');
+const UserList = () => import('../views/UserList.vue');
+const DocGia = () => import('../views/DocGia.vue');
+const Dashboard = () => import('../views/Dashboard.vue');
+const Sach = () => import('../views/Sach.vue');
+const SachNew = () => import('../views/SachNew.vue');
+const NhaXuatBan = () => import('../views/NhaXuatBan.vue');
+const NhaXuatBanNew = () => import('../views/NhaXuatBanNew.vue');
+const TheoDoiMuonSach = () => import('../views/TheoDoiMuonSach.vue');
+const AdminLayout = () => import('../layouts/AdminLayout.vue');
 
 const routes = [
   { path: '/', name: 'Home', component: Home },

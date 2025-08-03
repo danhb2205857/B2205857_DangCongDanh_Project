@@ -1,5 +1,6 @@
 import Sach from '../models/Sach.js';
 import { AppError } from '../middlewares/errorHandler.js';
+import { optimizeQuery, optimizePaginationResponse, createOptimizedResponse } from '../utils/responseOptimizer.js';
 
 /**
  * Sach Controller - Quản lý sách
@@ -37,32 +38,23 @@ export default {
     // Get total count
     const total = await Sach.countDocuments(searchQuery);
     
-    // Get data with pagination
-    const data = await Sach.find(searchQuery)
+    // Get data with pagination and optimization
+    let query = Sach.find(searchQuery)
       .skip((page - 1) * limit)
       .limit(limit)
-      .sort({ [sortBy]: sortOrder })
-      .lean();
+      .sort({ [sortBy]: sortOrder });
     
-    // Calculate pagination info
-    const totalPages = Math.ceil(total / limit);
-    const hasNextPage = page < totalPages;
-    const hasPrevPage = page > 1;
+    // Apply query optimization
+    query = optimizeQuery(query, 'sach', 'list');
     
-    res.json({
-      success: true,
+    const data = await query.lean();
+    
+    const paginatedResponse = optimizePaginationResponse(data, total, page, limit);
+    
+    return createOptimizedResponse(res, paginatedResponse, {
       message: 'Lấy danh sách sách thành công',
-      data: {
-        sach: data,
-        pagination: {
-          total,
-          totalPages,
-          currentPage: page,
-          limit,
-          hasNextPage,
-          hasPrevPage
-        }
-      }
+      context: 'list',
+      model: 'sach'
     });
   },
 
@@ -70,16 +62,19 @@ export default {
    * GET /api/sach/:id - Lấy thông tin chi tiết sách
    */
   async getById(req, res) {
-    const sach = await Sach.findOne({ MaSach: req.params.id });
+    let query = Sach.findOne({ MaSach: req.params.id });
+    query = optimizeQuery(query, 'sach', 'detail');
+    
+    const sach = await query.lean();
     
     if (!sach) {
       throw new AppError('Không tìm thấy sách', 404, 'SACH_NOT_FOUND');
     }
     
-    res.json({
-      success: true,
+    return createOptimizedResponse(res, sach, {
       message: 'Lấy thông tin sách thành công',
-      data: sach
+      context: 'detail',
+      model: 'sach'
     });
   },
 

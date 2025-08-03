@@ -1,25 +1,30 @@
-import { NhanVien } from '../models/index.js';
-import { generateToken } from '../utils/jwt.js';
-import { AppError } from '../middlewares/errorHandler.js';
+import { NhanVien } from "../models/index.js";
+import { generateToken } from "../utils/jwt.js";
+import { AppError } from "../middlewares/errorHandler.js";
 
 export default {
   /**
    * POST /api/auth/register - Đăng ký tài khoản nhân viên mới
    */
   async register(req, res) {
-    const { username, fullName, password, email, phone, address, birthDate } = req.body;
+    const { username, fullName, password, email, phone, address, birthDate } =
+      req.body;
 
     // Check if username already exists
-    const existingUser = await NhanVien.findOne({ MSNV: username.toUpperCase() });
+    const existingUser = await NhanVien.findOne({
+      MSNV: username.toUpperCase(),
+    });
     if (existingUser) {
-      throw new AppError('Mã nhân viên đã tồn tại', 400, 'DUPLICATE_USERNAME');
+      throw new AppError("Mã nhân viên đã tồn tại", 400, "DUPLICATE_USERNAME");
     }
 
     // Check if email already exists
     if (email) {
-      const existingEmail = await NhanVien.findOne({ Email: email.toLowerCase() });
+      const existingEmail = await NhanVien.findOne({
+        Email: email.toLowerCase(),
+      });
       if (existingEmail) {
-        throw new AppError('Email đã được sử dụng', 400, 'DUPLICATE_EMAIL');
+        throw new AppError("Email đã được sử dụng", 400, "DUPLICATE_EMAIL");
       }
     }
 
@@ -28,13 +33,13 @@ export default {
       MSNV: username.toUpperCase(),
       HoTenNV: fullName,
       Password: password,
-      ChucVu: 'Nhân viên', // Default role
+      ChucVu: "Nhân viên", // Default role
       DiaChi: address,
       SoDienThoai: phone,
       Email: email?.toLowerCase(),
       NgaySinh: birthDate ? new Date(birthDate) : undefined,
-      TrangThai: 'Đang làm việc',
-      Quyen: ['doc_gia', 'sach', 'muon_tra'] // Default permissions
+      TrangThai: "Đang làm việc",
+      Quyen: ["doc_gia", "sach", "muon_tra"], // Default permissions
     });
 
     await nhanVien.save();
@@ -44,7 +49,7 @@ export default {
 
     res.status(201).json({
       success: true,
-      message: 'Đăng ký tài khoản thành công',
+      message: "Đăng ký tài khoản thành công",
       data: {
         token,
         user: {
@@ -53,9 +58,9 @@ export default {
           hoTenNV: nhanVien.HoTenNV,
           chucVu: nhanVien.ChucVu,
           email: nhanVien.Email,
-          quyen: nhanVien.Quyen
-        }
-      }
+          quyen: nhanVien.Quyen,
+        },
+      },
     });
   },
 
@@ -67,9 +72,13 @@ export default {
 
     // Find user and check password
     const nhanVien = await NhanVien.authenticate(msnv, password);
-    
+
     if (!nhanVien) {
-      throw new AppError('Mã nhân viên hoặc mật khẩu không đúng', 401, 'INVALID_CREDENTIALS');
+      throw new AppError(
+        "Mã nhân viên hoặc mật khẩu không đúng",
+        401,
+        "INVALID_CREDENTIALS"
+      );
     }
 
     // Generate JWT token
@@ -77,7 +86,7 @@ export default {
 
     res.json({
       success: true,
-      message: 'Đăng nhập thành công',
+      message: "Đăng nhập thành công",
       data: {
         token,
         user: {
@@ -86,9 +95,9 @@ export default {
           hoTenNV: nhanVien.HoTenNV,
           chucVu: nhanVien.ChucVu,
           email: nhanVien.Email,
-          quyen: nhanVien.Quyen
-        }
-      }
+          quyen: nhanVien.Quyen,
+        },
+      },
     });
   },
 
@@ -98,10 +107,10 @@ export default {
   async logout(req, res) {
     // In a stateless JWT system, logout is handled client-side
     // But we can add token blacklisting here if needed in the future
-    
+
     res.json({
       success: true,
-      message: 'Đăng xuất thành công'
+      message: "Đăng xuất thành công",
     });
   },
 
@@ -114,7 +123,7 @@ export default {
 
     res.json({
       success: true,
-      message: 'Lấy thông tin profile thành công',
+      message: "Lấy thông tin profile thành công",
       data: {
         id: nhanVien._id,
         msnv: nhanVien.MSNV,
@@ -127,8 +136,8 @@ export default {
         ngayVaoLam: nhanVien.NgayVaoLam,
         trangThai: nhanVien.TrangThai,
         quyen: nhanVien.Quyen,
-        lanDangNhapCuoi: nhanVien.LanDangNhapCuoi
-      }
+        lanDangNhapCuoi: nhanVien.LanDangNhapCuoi,
+      },
     });
   },
 
@@ -140,14 +149,24 @@ export default {
     const nhanVien = req.user;
 
     // Verify current password
-    const isCurrentPasswordValid = await nhanVien.comparePassword(currentPassword);
+    const isCurrentPasswordValid = await nhanVien.comparePassword(
+      currentPassword
+    );
     if (!isCurrentPasswordValid) {
-      throw new AppError('Mật khẩu hiện tại không đúng', 400, 'INVALID_CURRENT_PASSWORD');
+      throw new AppError(
+        "Mật khẩu hiện tại không đúng",
+        400,
+        "INVALID_CURRENT_PASSWORD"
+      );
     }
 
     // Check if new password matches confirmation
     if (newPassword !== confirmPassword) {
-      throw new AppError('Mật khẩu mới và xác nhận mật khẩu không khớp', 400, 'PASSWORD_MISMATCH');
+      throw new AppError(
+        "Mật khẩu mới và xác nhận mật khẩu không khớp",
+        400,
+        "PASSWORD_MISMATCH"
+      );
     }
 
     // Update password
@@ -156,7 +175,7 @@ export default {
 
     res.json({
       success: true,
-      message: 'Đổi mật khẩu thành công'
+      message: "Đổi mật khẩu thành công",
     });
   },
 
@@ -171,7 +190,7 @@ export default {
 
     res.json({
       success: true,
-      message: 'Làm mới token thành công',
+      message: "Làm mới token thành công",
       data: {
         token,
         user: {
@@ -180,9 +199,9 @@ export default {
           hoTenNV: nhanVien.HoTenNV,
           chucVu: nhanVien.ChucVu,
           email: nhanVien.Email,
-          quyen: nhanVien.Quyen
-        }
-      }
+          quyen: nhanVien.Quyen,
+        },
+      },
     });
-  }
+  },
 };

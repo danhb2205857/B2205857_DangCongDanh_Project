@@ -8,6 +8,8 @@ import {
   handleUnhandledRejection, 
   handleUncaughtException 
 } from './middlewares/errorHandler.js';
+import { createOptimizedIndexes } from './utils/indexOptimizer.js';
+import { enableResponseCompression } from './utils/responseOptimizer.js';
 
 // Load environment variables
 dotenv.config();
@@ -20,14 +22,26 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Enable response compression
+app.use(enableResponseCompression);
+
 // Static files for uploads
 app.use('/uploads', express.static(process.env.UPLOAD_DIR || 'public/uploads'));
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI)
-.then(() => {
+.then(async () => {
   console.log('✅ MongoDB connected successfully');
   console.log('📊 Database:', process.env.MONGODB_DB_NAME || 'quanlymuonsach');
+  
+  // Create optimized indexes for better performance
+  if (process.env.NODE_ENV !== 'test') {
+    try {
+      await createOptimizedIndexes();
+    } catch (error) {
+      console.warn('⚠️  Index creation warning:', error.message);
+    }
+  }
 })
 .catch((err) => {
   console.error('❌ MongoDB connection error:', err);
