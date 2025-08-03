@@ -1,4 +1,5 @@
 import DocGia from "../models/DocGia.js";
+import { AppError } from '../middlewares/errorHandler.js';
 
 /**
  * DocGia Controller - Quản lý độc giả
@@ -45,30 +46,7 @@ export default {
         .sort({ [sortBy]: sortOrder })
         .lean();
 
-      // If no data found, return mock data for testing
-      if (data.length === 0 && total === 0) {
-        data = [
-          {
-            MaDocGia: "DG001",
-            HoLot: "Nguyễn Văn",
-            Ten: "An",
-            NgaySinh: new Date("1990-01-15"),
-            Phai: "Nam",
-            DiaChi: "123 Đường Lê Lợi, Phường Bến Nghé, Quận 1, TP.HCM",
-            DienThoai: "0901234567",
-          },
-          {
-            MaDocGia: "DG002",
-            HoLot: "Trần Thị",
-            Ten: "Bình",
-            NgaySinh: new Date("1992-05-20"),
-            Phai: "Nữ",
-            DiaChi: "456 Đường Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP.HCM",
-            DienThoai: "0987654321",
-          },
-        ];
-        total = data.length;
-      }
+
 
       // Calculate pagination info
       const totalPages = Math.ceil(total / limit);

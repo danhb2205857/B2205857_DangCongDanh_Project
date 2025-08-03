@@ -2,6 +2,12 @@ import express from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import cors from 'cors';
+import { 
+  errorHandler, 
+  notFound, 
+  handleUnhandledRejection, 
+  handleUncaughtException 
+} from './middlewares/errorHandler.js';
 
 // Load environment variables
 dotenv.config();
@@ -32,6 +38,14 @@ mongoose.connect(process.env.MONGODB_URI)
 // Import and use main router
 import apiRouter from './routes/index.js';
 app.use('/api', apiRouter);
+
+// Error handling middleware (must be last)
+app.use(notFound);
+app.use(errorHandler);
+
+// Handle unhandled promise rejections and uncaught exceptions
+handleUnhandledRejection();
+handleUncaughtException();
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

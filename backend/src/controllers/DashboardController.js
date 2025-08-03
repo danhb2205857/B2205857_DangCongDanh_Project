@@ -1,4 +1,5 @@
 import { DocGia, Sach, NhaXuatBan, TheoDoiMuonSach, NhanVien } from '../models/index.js';
+import { AppError } from '../middlewares/errorHandler.js';
 
 /**
  * Dashboard Controller - Thống kê tổng quan
@@ -9,7 +10,6 @@ export default {
    * GET /api/dashboard/stats - Lấy thống kê tổng quan
    */
   async getStats(req, res) {
-    try {
       // Get basic counts
       const [
         totalReaders,
@@ -100,21 +100,12 @@ export default {
         }
       });
 
-    } catch (error) {
-      console.error('Get dashboard stats error:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Lỗi hệ thống khi lấy thống kê',
-        error: 'GET_STATS_ERROR'
-      });
-    }
   },
 
   /**
    * GET /api/dashboard/recent-activities - Lấy hoạt động gần đây
    */
   async getRecentActivities(req, res) {
-    try {
       const limit = Math.min(20, Math.max(1, parseInt(req.query.limit) || 10));
 
       // Get recent borrows and returns
@@ -148,21 +139,12 @@ export default {
         }
       });
 
-    } catch (error) {
-      console.error('Get recent activities error:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Lỗi hệ thống khi lấy hoạt động gần đây',
-        error: 'GET_RECENT_ACTIVITIES_ERROR'
-      });
-    }
   },
 
   /**
    * GET /api/dashboard/charts - Lấy dữ liệu cho biểu đồ
    */
   async getChartData(req, res) {
-    try {
       const { period = '7days' } = req.query;
       
       let startDate;
@@ -267,13 +249,5 @@ export default {
         }
       });
 
-    } catch (error) {
-      console.error('Get chart data error:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Lỗi hệ thống khi lấy dữ liệu biểu đồ',
-        error: 'GET_CHART_DATA_ERROR'
-      });
-    }
   }
 };
