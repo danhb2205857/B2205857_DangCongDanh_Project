@@ -24,7 +24,7 @@ export function useAuth() {
   const login = async (credentials) => {
     try {
       // Gọi API login thực tế
-      const response = await axios.post('/api/auth/login', {
+      const response = await axios.post('/auth/login', {
         msnv: credentials.username,
         password: credentials.password
       });
@@ -71,7 +71,7 @@ export function useAuth() {
   const logout = async () => {
     try {
       // Gọi logout API
-      await axios.post('/api/auth/logout');
+      await axios.post('/auth/logout');
 
       // Clear local storage
       token.value = null;
@@ -118,7 +118,7 @@ export function useAuth() {
   // Refresh token if needed
   const refreshToken = async () => {
     try {
-      const response = await axios.post('/api/auth/refresh');
+      const response = await axios.post('/auth/refresh');
       
       // Update token
       token.value = response.data.token;

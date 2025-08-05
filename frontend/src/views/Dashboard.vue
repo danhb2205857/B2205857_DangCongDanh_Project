@@ -320,7 +320,7 @@ onMounted(() => {
 </script>
 
 <style scoped>
-@import '../assets/main_admin.css';
+@import '@/assets/styles/main.css';
 
 .text-xs {
   font-size: 0.7rem;

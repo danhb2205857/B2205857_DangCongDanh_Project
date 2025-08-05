@@ -81,6 +81,6 @@ const handleLogin = async () => {
 }
 </script>
 
-<style scoped>
-@import '../assets/main_admin.css';
+<style>
+@import '@/assets/styles/pages/auth.css';
 </style>

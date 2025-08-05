@@ -320,44 +320,6 @@ export default {
 }
 </script>
 
-<style scoped>
-.hero-image {
-    height: 400px;
-    object-fit: cover;
-}
-
-.category-card,
-.book-card {
-    cursor: pointer;
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-}
-
-.category-card:hover,
-.book-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important;
-}
-
-.category-icon {
-    width: 50px;
-    height: 50px;
-    font-size: 1.2rem;
-}
-
-.book-thumb {
-    height: 200px;
-    object-fit: cover;
-}
-
-.stat-item h2 {
-    font-size: 2.5rem;
-    font-weight: bold;
-    margin-bottom: 0.5rem;
-}
-
-.search-section {
-    margin-top: -50px;
-    position: relative;
-    z-index: 10;
-}
+<style>
+@import '@/assets/styles/pages/home.css';
 </style>

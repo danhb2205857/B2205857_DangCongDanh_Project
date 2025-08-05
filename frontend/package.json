@@ -9,6 +9,7 @@
     "analyze": "vite build --mode analyze"
   },
   "dependencies": {
+    "@fortawesome/fontawesome-free": "^7.0.0",
     "axios": "^1.7.0",
     "bootstrap": "^5.3.2",
     "bootstrap-icons": "^1.13.1",

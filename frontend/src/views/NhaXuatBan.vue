@@ -127,5 +127,5 @@ onMounted(() => {
 </script>
 
 <style scoped>
-@import '../assets/main_admin.css';
+@import '@/assets/styles/main.css';
 </style>

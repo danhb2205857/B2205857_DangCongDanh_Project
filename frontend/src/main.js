@@ -3,9 +3,7 @@ import App from './App.vue';
 import router from './router/index.js';
 import { useAuth } from './composables/useAuth.js';
 import { globalErrorHandler } from './composables/useErrorHandler.js';
-import 'bootstrap/dist/css/bootstrap.min.css';
-import 'bootstrap-icons/font/bootstrap-icons.css';
-import './assets/layout.css';
+import './assets/styles/main.css';
 
 const app = createApp(App);
 app.use(router);

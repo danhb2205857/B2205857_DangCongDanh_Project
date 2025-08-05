@@ -55,6 +55,7 @@ jspm_packages/
 backend/package-lock.json
 frontend/package-lock.json
 
+backend/TODO_INDEXES.md
 
 # TypeScript cache
 *.tsbuildinfo

@@ -325,51 +325,6 @@ export default {
 }
 </script>
 
-<style scoped>
-.category-card {
-  cursor: pointer;
-  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-}
-
-.category-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
-}
-
-.category-icon {
-  width: 50px;
-  height: 50px;
-  font-size: 1.2rem;
-}
-
-.stat-item h3 {
-  font-size: 2.5rem;
-  font-weight: bold;
-  margin-bottom: 0.5rem;
-}
-
-.stat-mini h6 {
-  font-size: 1.1rem;
-  font-weight: bold;
-}
-
-.contact-info {
-  border-top: 1px solid #eee;
-  padding-top: 0.75rem;
-}
-
-.page-link {
-  border: none;
-  color: #6c757d;
-}
-
-.page-link:hover {
-  background-color: #e9ecef;
-  color: #495057;
-}
-
-.page-item.active .page-link {
-  background-color: #007bff;
-  border-color: #007bff;
-}
+<style>
+@import '@/assets/styles/pages/categories.css';
 </style>

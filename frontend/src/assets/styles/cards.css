@@ -1,0 +1,114 @@
+/* ===== CARD STYLES ===== */
+
+/* Base Card Styles */
+.card {
+  border-radius: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+/* Interactive Cards */
+.category-card,
+.book-card {
+  cursor: pointer;
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.category-card:hover,
+.book-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Category Card Specific */
+.category-icon {
+  width: 50px;
+  height: 50px;
+  font-size: 1.2rem;
+}
+
+.contact-info {
+  border-top: 1px solid #eee;
+  padding-top: 0.75rem;
+}
+
+/* Book Card Specific */
+.book-thumb {
+  height: 200px;
+  object-fit: cover;
+}
+
+.book-card .position-absolute.bottom-0 {
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+}
+
+/* Stats Cards */
+.stat-item h2,
+.stat-item h3 {
+  font-size: 2.5rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.stat-mini h6 {
+  font-size: 1.1rem;
+  font-weight: bold;
+}
+
+/* Card Badges */
+.card .badge {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+}
+
+/* Card Images */
+.card-img-top {
+  transition: transform 0.3s ease;
+}
+
+.card:hover .card-img-top {
+  transform: scale(1.05);
+}
+
+/* Card Body Spacing */
+.card-body.p-2 {
+  padding: 0.75rem !important;
+}
+
+.card-body.p-4 {
+  padding: 2rem !important;
+}
+
+/* Card Text Utilities */
+.card-title.text-truncate {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Card Overlays */
+.card .position-relative .position-absolute {
+  transition: opacity 0.3s ease;
+}
+
+.card:hover .position-absolute.top-0 {
+  opacity: 0.9;
+}
+
+/* Card Groups */
+.card-group .card {
+  border-radius: 0;
+}
+
+.card-group .card:first-child {
+  border-top-left-radius: 0.5rem;
+  border-bottom-left-radius: 0.5rem;
+}
+
+.card-group .card:last-child {
+  border-top-right-radius: 0.5rem;
+  border-bottom-right-radius: 0.5rem;
+}

@@ -1,0 +1,186 @@
+/* ==========================================================================
+   COMPONENT STYLES
+   ========================================================================== */
+
+/* Import all component styles */
+@import './layouts.css';
+@import './cards.css';
+@import './forms.css';
+@import './buttons.css';
+@import './modals.css';
+@import './tables.css';
+@import './utilities.css';
+@import './animations.css';
+
+/* Logo Component */
+.logo {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
+
+.text-logo {
+  min-width: 40px;
+  min-height: 40px;
+}
+
+.logo-icon {
+  font-size: 1.5rem;
+}
+
+.logo-text {
+  line-height: 1.2;
+}
+
+.footer-logo {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+}
+
+.text-logo.footer-logo {
+  min-width: 80px;
+  min-height: 80px;
+}
+
+.text-logo.footer-logo .logo-icon {
+  font-size: 2.5rem;
+}
+
+.text-logo.footer-logo .logo-text {
+  font-size: 1.1rem;
+}
+
+/* Header Component */
+.search-form {
+  max-width: 400px;
+  width: 100%;
+}
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  object-fit: cover;
+}
+
+.navbar-nav .nav-link.active {
+  color: #0d6efd !important;
+  font-weight: 500;
+}
+
+.alert-container {
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  z-index: 1050;
+  min-width: 300px;
+  max-width: 500px;
+}
+
+.dropdown-menu {
+  border: none;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.dropdown-item {
+  padding: 0.5rem 1rem;
+  transition: background-color 0.15s ease-in-out;
+}
+
+.dropdown-item:hover {
+  background-color: #f8f9fa;
+}
+
+.dropdown-item i {
+  width: 16px;
+  text-align: center;
+}
+
+/* Footer Component */
+.footer-logo {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+}
+
+.footer-content a {
+  transition: color 0.3s ease;
+}
+
+.footer-content a:hover {
+  color: #0d6efd !important;
+}
+
+.social-links .btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.social-links .btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.stat-item h4 {
+  font-size: 1.8rem;
+  margin-bottom: 0.25rem;
+}
+
+.back-to-top {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+}
+
+.back-to-top:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
+/* Modal Component */
+.modal.show {
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+/* Image Fallback Component */
+.image-container {
+  position: relative;
+}
+
+.image-fallback {
+  border: 2px dashed #dee2e6;
+  border-radius: 0.375rem;
+}
+
+.fallback-text {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* Data Table Component */
+.table-loading {
+  min-height: 200px;
+}
+
+/* Stats Card Component */
+.stats-card {
+  transition: transform 0.2s ease-in-out;
+}
+
+.stats-card:hover {
+  transform: translateY(-2px);
+}

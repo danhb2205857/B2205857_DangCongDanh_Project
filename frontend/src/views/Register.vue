@@ -77,7 +77,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import axios from 'axios'
+import axios from '@/utils/axios'
 
 const router = useRouter()
 
@@ -132,7 +132,7 @@ const handleRegister = async () => {
 
   try {
     // Gọi API đăng ký
-    const response = await axios.post('/api/auth/register', {
+    const response = await axios.post('/auth/register', {
       username: registerForm.value.username,
       fullName: registerForm.value.fullName,
       password: registerForm.value.password,
@@ -165,5 +165,5 @@ const handleRegister = async () => {
 </script>
 
 <style scoped>
-@import '../assets/main_admin.css';
+@import '@/assets/styles/pages/auth.css';
 </style>
