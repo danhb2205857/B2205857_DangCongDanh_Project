@@ -58,10 +58,7 @@ const docGiaSchema = new mongoose.Schema({
   collection: 'docgia'
 });
 
-// Indexes for search performance
-docGiaSchema.index({ MaDocGia: 1 });
-docGiaSchema.index({ HoLot: 'text', Ten: 'text', DiaChi: 'text' });
-docGiaSchema.index({ DienThoai: 1 });
+// Indexes disabled for faster startup - will add back later if needed
 
 // Virtual for full name
 docGiaSchema.virtual('HoTenDayDu').get(function() {

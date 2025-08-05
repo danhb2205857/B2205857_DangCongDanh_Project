@@ -7,8 +7,7 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "optimize": "node -e \"import('./src/utils/indexOptimizer.js').then(m => m.optimizeCollections())\""
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
     "library",

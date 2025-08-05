@@ -459,6 +459,83 @@ export const returnBookSchema = {
   }
 };
 
+// Register validation schema
+export const registerSchema = {
+  username: {
+    required: true,
+    type: 'string',
+    minLength: 3,
+    maxLength: 50,
+    label: 'Tên đăng nhập'
+  },
+  fullName: {
+    required: true,
+    type: 'string',
+    minLength: 2,
+    maxLength: 100,
+    label: 'Họ tên'
+  },
+  password: {
+    required: true,
+    type: 'string',
+    minLength: 6,
+    maxLength: 50,
+    label: 'Mật khẩu',
+    custom: (value) => {
+      if (!/[a-zA-Z]/.test(value)) {
+        return 'Mật khẩu phải chứa ít nhất một chữ cái';
+      }
+      if (!/\d/.test(value)) {
+        return 'Mật khẩu phải chứa ít nhất một số';
+      }
+      return null;
+    }
+  },
+  email: {
+    required: false,
+    type: 'string',
+    pattern: VALIDATION_PATTERNS.EMAIL,
+    patternMessage: 'Email không hợp lệ',
+    label: 'Email'
+  },
+  phone: {
+    required: true,
+    type: 'string',
+    pattern: VALIDATION_PATTERNS.PHONE,
+    patternMessage: 'Số điện thoại không hợp lệ',
+    label: 'Số điện thoại'
+  },
+  address: {
+    required: true,
+    type: 'string',
+    minLength: 5,
+    maxLength: 200,
+    label: 'Địa chỉ'
+  },
+  birthDate: {
+    required: false,
+    type: 'string',
+    label: 'Ngày sinh',
+    custom: (value) => {
+      if (!value) return null;
+      
+      const date = new Date(value);
+      if (isNaN(date.getTime())) {
+        return 'Ngày sinh không hợp lệ';
+      }
+      
+      const today = new Date();
+      const age = today.getFullYear() - date.getFullYear();
+      
+      if (age < 18 || age > 65) {
+        return 'Tuổi phải từ 18 đến 65';
+      }
+      
+      return null;
+    }
+  }
+};
+
 export default {
   sachSchema,
   docGiaSchema,
@@ -469,5 +546,6 @@ export default {
   docGiaUpdateSchema,
   nhaXuatBanUpdateSchema,
   nhanVienUpdateSchema,
-  returnBookSchema
+  returnBookSchema,
+  registerSchema
 };

@@ -13,7 +13,8 @@ import {
   docGiaUpdateSchema,
   nhaXuatBanUpdateSchema,
   nhanVienUpdateSchema,
-  returnBookSchema
+  returnBookSchema,
+  registerSchema
 } from './validationSchemas.js';
 
 /**
@@ -164,6 +165,7 @@ export const validateNhanVien = validate(nhanVienSchema);
 export const validateNhanVienUpdate = validate(nhanVienUpdateSchema);
 export const validateTheoDoiMuonSach = validate(theoDoiMuonSachSchema);
 export const validateReturnBook = validate(returnBookSchema);
+export const validateRegister = validate(registerSchema);
 
 /**
  * Validate ID parameter in URL
@@ -229,6 +231,7 @@ export default {
   validateNhanVienUpdate,
   validateTheoDoiMuonSach,
   validateReturnBook,
+  validateRegister,
   validateId,
   validatePagination
 };

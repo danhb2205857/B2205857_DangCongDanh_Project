@@ -64,13 +64,7 @@ const theoDoiMuonSachSchema = new mongoose.Schema({
   collection: 'theodoimuonsach'
 });
 
-// Indexes for performance
-theoDoiMuonSachSchema.index({ MaTheoDoiMuonSach: 1 });
-theoDoiMuonSachSchema.index({ MaDocGia: 1 });
-theoDoiMuonSachSchema.index({ MaSach: 1 });
-theoDoiMuonSachSchema.index({ NgayMuon: -1 });
-theoDoiMuonSachSchema.index({ TrangThai: 1 });
-theoDoiMuonSachSchema.index({ NgayHenTra: 1 });
+// Indexes disabled for faster startup - will add back later if needed
 
 // Virtual for overdue status
 theoDoiMuonSachSchema.virtual('IsOverdue').get(function() {

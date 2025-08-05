@@ -30,9 +30,7 @@ const nhaXuatBanSchema = new mongoose.Schema({
   collection: 'nhaxuatban'
 });
 
-// Indexes for search performance
-nhaXuatBanSchema.index({ MaNhaXuatBan: 1 });
-nhaXuatBanSchema.index({ TenNhaXuatBan: 'text', DiaChi: 'text' });
+// Indexes disabled for faster startup - will add back later if needed
 
 // Virtual for book count
 nhaXuatBanSchema.virtual('SoSach', {

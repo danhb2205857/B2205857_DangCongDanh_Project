@@ -53,11 +53,7 @@ const sachSchema = new mongoose.Schema({
   collection: 'sach'
 });
 
-// Indexes for search performance
-sachSchema.index({ MaSach: 1 });
-sachSchema.index({ TenSach: 'text', NguonGoc: 'text', NhaXuatBan: 'text' });
-sachSchema.index({ MaNhaXuatBan: 1 });
-sachSchema.index({ NamXuatBan: 1 });
+// Indexes disabled for faster startup - will add back later if needed
 
 // Virtual for availability status
 sachSchema.virtual('TrangThai').get(function() {

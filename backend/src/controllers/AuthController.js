@@ -7,12 +7,27 @@ export default {
    * POST /api/auth/register - Đăng ký tài khoản nhân viên mới
    */
   async register(req, res) {
-    const { username, fullName, password, email, phone, address, birthDate } =
-      req.body;
+    try {
+      console.log('Register request body:', req.body);
+      
+      const { username, fullName, password, email, phone, address, birthDate } =
+        req.body;
 
-    // Check if username already exists
+    // Generate MSNV if username doesn't follow NV format
+    let msnv = username.toUpperCase();
+    if (!msnv.match(/^NV\d{3,}$/)) {
+      // Find the next available MSNV number
+      const lastEmployee = await NhanVien.findOne({}, {}, { sort: { 'MSNV': -1 } });
+      let nextNumber = 1;
+      if (lastEmployee && lastEmployee.MSNV.match(/^NV(\d+)$/)) {
+        nextNumber = parseInt(lastEmployee.MSNV.substring(2)) + 1;
+      }
+      msnv = `NV${nextNumber.toString().padStart(3, '0')}`;
+    }
+
+    // Check if MSNV already exists
     const existingUser = await NhanVien.findOne({
-      MSNV: username.toUpperCase(),
+      MSNV: msnv,
     });
     if (existingUser) {
       throw new AppError("Mã nhân viên đã tồn tại", 400, "DUPLICATE_USERNAME");
@@ -30,7 +45,7 @@ export default {
 
     // Create new employee
     const nhanVien = new NhanVien({
-      MSNV: username.toUpperCase(),
+      MSNV: msnv,
       HoTenNV: fullName,
       Password: password,
       ChucVu: "Nhân viên", // Default role
@@ -39,13 +54,18 @@ export default {
       Email: email?.toLowerCase(),
       NgaySinh: birthDate ? new Date(birthDate) : undefined,
       TrangThai: "Đang làm việc",
-      Quyen: ["doc_gia", "sach", "muon_tra"], // Default permissions
+      Quyen: ["doc_gia", "sach", "muon_tra", "thong_ke"], // Default permissions
     });
 
     await nhanVien.save();
 
     // Generate JWT token
-    const token = generateToken(nhanVien._id);
+    const token = generateToken({
+      id: nhanVien._id,
+      msnv: nhanVien.MSNV,
+      chucVu: nhanVien.ChucVu,
+      quyen: nhanVien.Quyen
+    });
 
     res.status(201).json({
       success: true,
@@ -62,6 +82,10 @@ export default {
         },
       },
     });
+    } catch (error) {
+      console.error('Register error:', error);
+      throw error;
+    }
   },
 
   /**
@@ -82,7 +106,12 @@ export default {
     }
 
     // Generate JWT token
-    const token = generateToken(nhanVien._id);
+    const token = generateToken({
+      id: nhanVien._id,
+      msnv: nhanVien.MSNV,
+      chucVu: nhanVien.ChucVu,
+      quyen: nhanVien.Quyen
+    });
 
     res.json({
       success: true,
@@ -186,7 +215,12 @@ export default {
     const nhanVien = req.user;
 
     // Generate new token
-    const token = generateToken(nhanVien._id);
+    const token = generateToken({
+      id: nhanVien._id,
+      msnv: nhanVien.MSNV,
+      chucVu: nhanVien.ChucVu,
+      quyen: nhanVien.Quyen
+    });
 
     res.json({
       success: true,

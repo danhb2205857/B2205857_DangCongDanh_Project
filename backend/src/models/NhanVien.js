@@ -106,10 +106,7 @@ const NhanVienSchema = new mongoose.Schema(
   }
 );
 
-// Indexes for better performance (MSNV unique index is auto-created)
-NhanVienSchema.index({ Email: 1 });
-NhanVienSchema.index({ TrangThai: 1 });
-NhanVienSchema.index({ ChucVu: 1 });
+// Indexes disabled for faster startup - will add back later if needed
 
 // Virtual for work duration
 NhanVienSchema.virtual("ThoiGianLamViec").get(function () {
