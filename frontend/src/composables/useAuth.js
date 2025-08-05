@@ -1,6 +1,6 @@
 import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
-import axios from "axios";
+import axios from "@/utils/axios";
 
 // Global state cho authentication
 const token = ref(localStorage.getItem("token"));
