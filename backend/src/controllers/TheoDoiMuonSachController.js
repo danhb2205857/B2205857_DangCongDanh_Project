@@ -103,39 +103,7 @@ export default {
     // Create query without chaining to avoid issues
     let query = TheoDoiMuonSach.find(searchQuery);
 
-    // Apply population
-    query = query.populate({
-      path: "MaDocGia",
-      select: "HoLot Ten DienThoai",
-      model: "DocGia",
-      localField: "MaDocGia",
-      foreignField: "MaDocGia",
-      justOne: true,
-    });
-    query = query.populate({
-      path: "MaSach",
-      select: "TenSach NguonGoc SoQuyen",
-      model: "Sach",
-      localField: "MaSach",
-      foreignField: "MaSach",
-      justOne: true,
-    });
-    query = query.populate({
-      path: "NhanVienMuon",
-      select: "HoTenNV",
-      model: "NhanVien",
-      localField: "NhanVienMuon",
-      foreignField: "MaNhanVien",
-      justOne: true,
-    });
-    query = query.populate({
-      path: "NhanVienTra",
-      select: "HoTenNV",
-      model: "NhanVien",
-      localField: "NhanVienTra",
-      foreignField: "MaNhanVien",
-      justOne: true,
-    });
+    // No population - return MaDocGia and MaSach as strings only
 
     // Apply pagination
     query = query.skip(skip);
@@ -185,10 +153,8 @@ export default {
     res.json({
       success: true,
       message: "Lấy danh sách theo dõi mượn sách thành công",
-      data: {
-        theodoimuonsach: data,
-        pagination: paginationInfo,
-      },
+      data: data,
+      pagination: paginationInfo,
     });
 
     console.log(
@@ -256,7 +222,8 @@ export default {
       throw new AppError("Không tìm thấy sách", 404, "SACH_NOT_FOUND");
     }
 
-    if (sach.SoQuyen <= 0) {
+    const soQuyenConLai = sach.SoQuyenConLai !== undefined ? sach.SoQuyenConLai : sach.SoQuyen;
+    if (soQuyenConLai <= 0) {
       throw new AppError("Sách đã hết", 400, "BOOK_OUT_OF_STOCK");
     }
 
@@ -294,23 +261,19 @@ export default {
     await theoDoiMuonSach.save();
     console.log("Borrow record saved successfully");
 
-    // Decrease book quantity
-    console.log("Decreasing book quantity...");
-    await Sach.findOneAndUpdate({ MaSach }, { $inc: { SoQuyen: -1 } });
-    console.log("Book quantity updated");
+    // Decrease book available quantity
+    console.log("Decreasing book available quantity...");
+    await Sach.findOneAndUpdate({ MaSach }, { $inc: { SoQuyenConLai: -1 } });
+    console.log("Book available quantity updated");
 
-    // Populate and return
-    console.log("Populating response data...");
-    const populatedRecord = await TheoDoiMuonSach.findById(theoDoiMuonSach._id)
-      .populate("MaDocGia", "HoLot Ten")
-      .populate("MaSach", "TenSach NguonGoc")
-      .populate("NhanVienMuon", "HoTenNV")
-      .lean();
+    // Return without population
+    console.log("Returning saved record...");
+    const savedRecord = await TheoDoiMuonSach.findById(theoDoiMuonSach._id).lean();
 
     res.status(201).json({
       success: true,
       message: "Mượn sách thành công",
-      data: populatedRecord,
+      data: savedRecord,
     });
 
     console.log("Borrow book operation completed successfully");
@@ -360,27 +323,22 @@ export default {
     await theoDoiMuonSach.save();
     console.log("Return record updated successfully");
 
-    // Increase book quantity
-    console.log("Increasing book quantity...");
+    // Increase book available quantity
+    console.log("Increasing book available quantity...");
     await Sach.findOneAndUpdate(
       { MaSach: theoDoiMuonSach.MaSach },
-      { $inc: { SoQuyen: 1 } }
+      { $inc: { SoQuyenConLai: 1 } }
     );
-    console.log("Book quantity updated");
+    console.log("Book available quantity updated");
 
-    // Populate and return
-    console.log("Populating response data...");
-    const populatedRecord = await TheoDoiMuonSach.findById(theoDoiMuonSach._id)
-      .populate("MaDocGia", "HoLot Ten")
-      .populate("MaSach", "TenSach NguonGoc")
-      .populate("NhanVienMuon", "HoTenNV")
-      .populate("NhanVienTra", "HoTenNV")
-      .lean();
+    // Return without population
+    console.log("Returning updated record...");
+    const updatedRecord = await TheoDoiMuonSach.findById(theoDoiMuonSach._id).lean();
 
     res.json({
       success: true,
       message: "Trả sách thành công",
-      data: populatedRecord,
+      data: updatedRecord,
     });
 
     console.log("Return book operation completed successfully");
@@ -437,18 +395,14 @@ export default {
     await theoDoiMuonSach.save();
     console.log("Due date updated successfully");
 
-    // Populate and return
-    console.log("Populating response data...");
-    const populatedRecord = await TheoDoiMuonSach.findById(theoDoiMuonSach._id)
-      .populate("MaDocGia", "HoLot Ten")
-      .populate("MaSach", "TenSach NguonGoc")
-      .populate("NhanVienMuon", "HoTenNV")
-      .lean();
+    // Return without population
+    console.log("Returning updated record...");
+    const updatedRecord = await TheoDoiMuonSach.findById(theoDoiMuonSach._id).lean();
 
     res.json({
       success: true,
       message: "Gia hạn sách thành công",
-      data: populatedRecord,
+      data: updatedRecord,
     });
 
     console.log("Extend due date operation completed successfully");

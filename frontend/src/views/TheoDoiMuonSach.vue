@@ -1,52 +1,147 @@
 <template>
   <div class="container-fluid">
-    <DataTable
-      title="Quản lý mượn trả sách"
-      :data="filteredRecords"
-      :columns="columns"
-      :loading="loading"
-      :searchable="true"
-      search-placeholder="Tìm kiếm theo mã, độc giả, sách..."
-      :actions="['view', 'edit', 'delete']"
-      @search="handleSearch"
-      @action="handleAction"
-    >
-      <template #actions>
-        <div class="d-flex gap-2">
-          <select class="form-select form-select-sm" v-model="statusFilter" @change="handleStatusFilter">
-            <option value="">Tất cả trạng thái</option>
-            <option value="Đang mượn">Đang mượn</option>
-            <option value="Đã trả">Đã trả</option>
-            <option value="Quá hạn">Quá hạn</option>
-          </select>
-          <button class="btn btn-primary" @click="showBorrowModal">
-            <i class="bi bi-plus-circle me-2"></i>Mượn sách
-          </button>
+    <div class="row">
+      <div class="col-12">
+        <div class="card shadow">
+          <div class="card-header py-3">
+            <h5 class="card-title mb-0 text-primary font-weight-bold">
+              <i class="bi bi-journal-bookmark me-2"></i>Quản lý mượn trả sách
+            </h5>
+          </div>
+          <div class="card-body">
+            <!-- Search and Add Section -->
+            <div class="row mb-4">
+              <div class="col-md-6">
+                <div class="input-group">
+                  <span class="input-group-text">
+                    <i class="bi bi-search"></i>
+                  </span>
+                  <input type="text" class="form-control" placeholder="Tìm kiếm theo mã, độc giả, sách..."
+                    v-model="searchQuery" @input="handleSearch">
+                  <button class="btn btn-outline-secondary" @click="clearSearch" v-if="searchQuery">
+                    <i class="bi bi-x"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="col-md-3">
+                <select class="form-select" v-model="statusFilter" @change="handleStatusFilter">
+                  <option value="">Tất cả trạng thái</option>
+                  <option value="Đang mượn">Đang mượn</option>
+                  <option value="Đã trả">Đã trả</option>
+                  <option value="Quá hạn">Quá hạn</option>
+                </select>
+              </div>
+              <div class="col-md-3 text-end">
+                <button class="btn btn-primary" @click="showBorrowModal">
+                  <i class="bi bi-plus-circle me-2"></i>Mượn sách
+                </button>
+              </div>
+            </div>
+
+            <!-- Table Section -->
+            <div class="table-responsive">
+              <table class="table table-hover">
+                <thead class="table-light">
+                  <tr>
+                    <th style="width: 120px;">Mã theo dõi</th>
+                    <th>Độc giả</th>
+                    <th>Sách</th>
+                    <th style="width: 120px;">Ngày mượn</th>
+                    <th style="width: 120px;">Ngày hẹn trả</th>
+                    <th style="width: 120px;">Ngày trả</th>
+                    <th style="width: 120px;">Trạng thái</th>
+                    <th style="width: 150px;" class="text-center">Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="record in paginatedRecords" :key="record.MaTheoDoiMuonSach">
+                    <td>
+                      <span class="badge bg-primary">{{ record.MaTheoDoiMuonSach }}</span>
+                    </td>
+                    <td class="fw-bold">{{ getReaderName(record) }}</td>
+                    <td>{{ getBookTitle(record) }}</td>
+                    <td>{{ formatDate(record.NgayMuon) }}</td>
+                    <td :class="getDueDateClass(record)">{{ formatDate(record.NgayHenTra) }}</td>
+                    <td>{{ record.NgayTra ? formatDate(record.NgayTra) : '-' }}</td>
+                    <td>
+                      <span :class="'badge ' + getStatusClass(record.TrangThai)">
+                        {{ record.TrangThai }}
+                      </span>
+                    </td>
+                    <td class="text-center">
+                      <div class="btn-group" role="group">
+                        <button v-if="record.TrangThai === 'Đang mượn'" class="btn btn-sm btn-outline-success"
+                          @click="showReturnModal(record)" title="Trả sách">
+                          <i class="bi bi-check-circle"></i>
+                        </button>
+                        <button v-if="record.TrangThai === 'Đang mượn'" class="btn btn-sm btn-outline-warning"
+                          @click="showExtendModal(record)" title="Gia hạn">
+                          <i class="bi bi-calendar-plus"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-info" @click="viewDetails(record)" title="Xem chi tiết">
+                          <i class="bi bi-eye"></i>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr v-if="filteredRecords.length === 0 && !loading">
+                    <td colspan="8" class="text-center text-muted py-4">
+                      <i class="bi bi-inbox display-4 d-block mb-2"></i>
+                      {{ searchQuery || statusFilter ? 'Không tìm thấy bản ghi nào' : 'Chưa có bản ghi mượn trả nào' }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Loading State -->
+            <div v-if="loading" class="text-center py-4">
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Đang tải...</span>
+              </div>
+              <p class="mt-2 text-muted">Đang tải danh sách mượn trả sách...</p>
+            </div>
+
+            <!-- Pagination -->
+            <div class="row mt-4" v-if="totalItems > 0">
+              <div class="col-md-6">
+                <p class="text-muted">
+                  Hiển thị {{ startIndex + 1 }} - {{ endIndex }} trong tổng số {{
+                    totalItems }} bản ghi
+                </p>
+              </div>
+              <div class="col-md-6">
+                <nav aria-label="Pagination">
+                  <ul class="pagination justify-content-end mb-0">
+                    <li class="page-item" :class="{ disabled: currentPage === 1 }">
+                      <button class="page-link" @click="goToPage(currentPage - 1)" :disabled="currentPage === 1">
+                        <i class="bi bi-chevron-left"></i>
+                      </button>
+                    </li>
+                    <li class="page-item" v-for="page in visiblePages" :key="page"
+                      :class="{ active: page === currentPage }">
+                      <button class="page-link" @click="goToPage(page)">{{ page }}</button>
+                    </li>
+                    <li class="page-item" :class="{ disabled: currentPage === totalPages }">
+                      <button class="page-link" @click="goToPage(currentPage + 1)"
+                        :disabled="currentPage === totalPages">
+                        <i class="bi bi-chevron-right"></i>
+                      </button>
+                    </li>
+                  </ul>
+                </nav>
+              </div>
+            </div>
+          </div>
         </div>
-      </template>
-
-      <template #column-TrangThai="{ value }">
-        <span :class="getStatusBadgeClass(value)">{{ value }}</span>
-      </template>
-
-      <template #column-NgayMuon="{ value }">
-        {{ formatDate(value) }}
-      </template>
-
-      <template #column-NgayHenTra="{ value }">
-        {{ formatDate(value) }}
-      </template>
-
-      <template #column-NgayTra="{ value }">
-        {{ value ? formatDate(value) : '-' }}
-      </template>
-    </DataTable>
+      </div>
+    </div>
 
 
 
     <!-- Borrow Modal -->
-    <div class="modal fade" :class="{ show: showBorrowModalState }" :style="{ display: showBorrowModalState ? 'block' : 'none' }"
-      tabindex="-1">
+    <div class="modal fade" :class="{ show: showBorrowModalState }"
+      :style="{ display: showBorrowModalState ? 'block' : 'none' }" tabindex="-1">
       <div class="modal-dialog modal-lg">
         <div class="modal-content">
           <div class="modal-header">
@@ -78,7 +173,7 @@
                       :class="{ 'is-invalid': borrowErrors.MaSach }">
                       <option value="">Chọn sách</option>
                       <option v-for="sach in availableBooks" :key="sach.MaSach" :value="sach.MaSach">
-                        {{ sach.TenSach }} ({{ sach.MaSach }}) - Còn: {{ sach.SoQuyen }}
+                        {{ sach.TenSach }} ({{ sach.MaSach }}) - Còn: {{ sach.SoQuyenConLai || sach.SoQuyen }}
                       </option>
                     </select>
                     <div class="invalid-feedback" v-if="borrowErrors.MaSach">{{ borrowErrors.MaSach }}</div>
@@ -97,7 +192,8 @@
                 </div>
                 <div class="col-md-6">
                   <div class="mb-3">
-                    <label for="nhanVienMuon" class="form-label">Nhân viên xử lý <span class="text-danger">*</span></label>
+                    <label for="nhanVienMuon" class="form-label">Nhân viên xử lý <span
+                        class="text-danger">*</span></label>
                     <input type="text" class="form-control" id="nhanVienMuon" v-model="borrowForm.NhanVienMuon"
                       :class="{ 'is-invalid': borrowErrors.NhanVienMuon }" placeholder="Mã nhân viên">
                     <div class="invalid-feedback" v-if="borrowErrors.NhanVienMuon">{{ borrowErrors.NhanVienMuon }}</div>
@@ -127,8 +223,8 @@
     </div>
 
     <!-- Return Modal -->
-    <div class="modal fade" :class="{ show: showReturnModalState }" :style="{ display: showReturnModalState ? 'block' : 'none' }"
-      tabindex="-1">
+    <div class="modal fade" :class="{ show: showReturnModalState }"
+      :style="{ display: showReturnModalState ? 'block' : 'none' }" tabindex="-1">
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
@@ -143,7 +239,7 @@
               <p><strong>Sách:</strong> {{ getBookTitle(returningRecord) }}</p>
               <p><strong>Ngày mượn:</strong> {{ formatDate(returningRecord.NgayMuon) }}</p>
               <p><strong>Ngày hẹn trả:</strong> {{ formatDate(returningRecord.NgayHenTra) }}</p>
-              
+
               <div class="mb-3">
                 <label for="nhanVienTra" class="form-label">Nhân viên xử lý <span class="text-danger">*</span></label>
                 <input type="text" class="form-control" id="nhanVienTra" v-model="returnForm.NhanVienTra"
@@ -173,8 +269,8 @@
     </div>
 
     <!-- Extend Modal -->
-    <div class="modal fade" :class="{ show: showExtendModalState }" :style="{ display: showExtendModalState ? 'block' : 'none' }"
-      tabindex="-1">
+    <div class="modal fade" :class="{ show: showExtendModalState }"
+      :style="{ display: showExtendModalState ? 'block' : 'none' }" tabindex="-1">
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
@@ -188,9 +284,10 @@
               <p><strong>Độc giả:</strong> {{ getReaderName(extendingRecord) }}</p>
               <p><strong>Sách:</strong> {{ getBookTitle(extendingRecord) }}</p>
               <p><strong>Ngày hẹn trả hiện tại:</strong> {{ formatDate(extendingRecord.NgayHenTra) }}</p>
-              
+
               <div class="mb-3">
-                <label for="ngayHenTraMoi" class="form-label">Ngày hẹn trả mới <span class="text-danger">*</span></label>
+                <label for="ngayHenTraMoi" class="form-label">Ngày hẹn trả mới <span
+                    class="text-danger">*</span></label>
                 <input type="date" class="form-control" id="ngayHenTraMoi" v-model="extendForm.NgayHenTra"
                   :class="{ 'is-invalid': extendErrors.NgayHenTra }" :min="tomorrow">
                 <div class="invalid-feedback" v-if="extendErrors.NgayHenTra">{{ extendErrors.NgayHenTra }}</div>
@@ -217,15 +314,166 @@
       </div>
     </div>
 
+    <!-- View Details Modal -->
+    <div class="modal fade" :class="{ show: showDetailsModalState }"
+      :style="{ display: showDetailsModalState ? 'block' : 'none' }" tabindex="-1">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title text-info">
+              <i class="bi bi-info-circle me-2"></i>Chi tiết mượn trả sách
+            </h5>
+            <button type="button" class="btn-close" @click="closeDetailsModal"></button>
+          </div>
+          <div class="modal-body">
+            <div v-if="viewingRecord">
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="card border-primary mb-3">
+                    <div class="card-header bg-primary text-white">
+                      <i class="bi bi-bookmark me-2"></i>Thông tin mượn sách
+                    </div>
+                    <div class="card-body">
+                      <div class="mb-2">
+                        <strong>Mã theo dõi:</strong>
+                        <span class="badge bg-primary ms-2">{{ viewingRecord.MaTheoDoiMuonSach }}</span>
+                      </div>
+                      <div class="mb-2">
+                        <strong>Ngày mượn:</strong>
+                        <span class="ms-2">{{ formatDate(viewingRecord.NgayMuon) }}</span>
+                      </div>
+                      <div class="mb-2">
+                        <strong>Ngày hẹn trả:</strong>
+                        <span class="ms-2" :class="getDueDateClass(viewingRecord)">
+                          {{ formatDate(viewingRecord.NgayHenTra) }}
+                        </span>
+                      </div>
+                      <div class="mb-2">
+                        <strong>Ngày trả:</strong>
+                        <span class="ms-2">{{ viewingRecord.NgayTra ? formatDate(viewingRecord.NgayTra) : 'Chưa trả'
+                          }}</span>
+                      </div>
+                      <div class="mb-2">
+                        <strong>Trạng thái:</strong>
+                        <span :class="'badge ms-2 ' + getStatusClass(viewingRecord.TrangThai)">
+                          {{ viewingRecord.TrangThai }}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="col-md-6">
+                  <div class="card border-success mb-3">
+                    <div class="card-header bg-success text-white">
+                      <i class="bi bi-person me-2"></i>Thông tin độc giả
+                    </div>
+                    <div class="card-body">
+                      <div class="mb-2">
+                        <strong>Mã độc giả:</strong>
+                        <span class="badge bg-success ms-2">{{ getDocGiaCode(viewingRecord) }}</span>
+                      </div>
+                      <div class="mb-2">
+                        <strong>Họ tên:</strong>
+                        <span class="ms-2">{{ getReaderName(viewingRecord) }}</span>
+                      </div>
+                      <div class="mb-2">
+                        <strong>Điện thoại:</strong>
+                        <span class="ms-2">{{ getDocGiaPhone(viewingRecord) || 'Không có' }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="card border-info mb-3">
+                    <div class="card-header bg-info text-white">
+                      <i class="bi bi-book me-2"></i>Thông tin sách
+                    </div>
+                    <div class="card-body">
+                      <div class="mb-2">
+                        <strong>Mã sách:</strong>
+                        <span class="badge bg-info ms-2">{{ getSachCode(viewingRecord) }}</span>
+                      </div>
+                      <div class="mb-2">
+                        <strong>Tên sách:</strong>
+                        <span class="ms-2">{{ getBookTitle(viewingRecord) }}</span>
+                      </div>
+                      <div class="mb-2">
+                        <strong>Tác giả:</strong>
+                        <span class="ms-2">{{ getSachAuthor(viewingRecord) || 'Không có' }}</span>
+                      </div>
+                      <div class="mb-2">
+                        <strong>Số quyển:</strong>
+                        <span class="ms-2">{{ getSachQuantity(viewingRecord) || 'Không có' }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="col-md-6">
+                  <div class="card border-warning mb-3">
+                    <div class="card-header bg-warning text-dark">
+                      <i class="bi bi-person-badge me-2"></i>Thông tin nhân viên
+                    </div>
+                    <div class="card-body">
+                      <div class="mb-2">
+                        <strong>NV xử lý mượn:</strong>
+                        <span class="ms-2">{{ viewingRecord.NhanVienMuon || 'Không có' }}</span>
+                      </div>
+                      <div class="mb-2">
+                        <strong>NV xử lý trả:</strong>
+                        <span class="ms-2">{{ viewingRecord.NhanVienTra || 'Chưa trả' }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-12">
+                  <div class="card border-secondary">
+                    <div class="card-header bg-secondary text-white">
+                      <i class="bi bi-chat-text me-2"></i>Ghi chú
+                    </div>
+                    <div class="card-body">
+                      <p class="mb-0" :class="viewingRecord.GhiChu ? '' : 'text-muted fst-italic'">
+                        {{ viewingRecord.GhiChu || 'Không có ghi chú' }}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" @click="closeDetailsModal">
+              <i class="bi bi-x-circle me-2"></i>Đóng
+            </button>
+            <div v-if="viewingRecord && viewingRecord.TrangThai === 'Đang mượn'">
+              <button type="button" class="btn btn-success me-2" @click="showReturnModalFromDetails">
+                <i class="bi bi-check-circle me-2"></i>Trả sách
+              </button>
+              <button type="button" class="btn btn-warning" @click="showExtendModalFromDetails">
+                <i class="bi bi-calendar-plus me-2"></i>Gia hạn
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Modal Backdrop -->
-    <div class="modal-backdrop fade show" v-if="showBorrowModalState || showReturnModalState || showExtendModalState"></div>
+    <div class="modal-backdrop fade show"
+      v-if="showBorrowModalState || showReturnModalState || showExtendModalState || showDetailsModalState">
+    </div>
   </div>
 </template>
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import api from '../utils/axios.js'
-import DataTable from '../components/DataTable.vue'
-import Modal from '../components/Modal.vue'
 
 // Reactive data
 const recordsList = ref([])
@@ -239,13 +487,17 @@ const searchQuery = ref('')
 const statusFilter = ref('')
 const currentPage = ref(1)
 const itemsPerPage = ref(10)
+const totalItems = ref(0)
+const totalPages = ref(0)
 
 // Modal states
 const showBorrowModalState = ref(false)
 const showReturnModalState = ref(false)
 const showExtendModalState = ref(false)
+const showDetailsModalState = ref(false)
 const returningRecord = ref(null)
 const extendingRecord = ref(null)
+const viewingRecord = ref(null)
 
 // Form data
 const borrowForm = ref({
@@ -271,75 +523,10 @@ const borrowErrors = ref({})
 const returnErrors = ref({})
 const extendErrors = ref({})
 
-// Table columns
-const columns = ref([
-  {
-    key: 'MaTheoDoiMuonSach',
-    title: 'Mã theo dõi',
-    sortable: true,
-    width: '120px'
-  },
-  {
-    key: 'DocGia',
-    title: 'Độc giả',
-    sortable: true,
-    formatter: (value, item) => {
-      if (typeof value === 'object' && value !== null) {
-        return `${value.HoLot} ${value.Ten}`.trim()
-      }
-      return value || '-'
-    }
-  },
-  {
-    key: 'Sach',
-    title: 'Sách',
-    sortable: true,
-    formatter: (value, item) => {
-      if (typeof value === 'object' && value !== null) {
-        return value.TenSach || '-'
-      }
-      return value || '-'
-    }
-  },
-  {
-    key: 'NgayMuon',
-    title: 'Ngày mượn',
-    type: 'date',
-    sortable: true,
-    width: '120px'
-  },
-  {
-    key: 'NgayHenTra',
-    title: 'Ngày hẹn trả',
-    type: 'date',
-    sortable: true,
-    width: '120px'
-  },
-  {
-    key: 'NgayTra',
-    title: 'Ngày trả',
-    type: 'date',
-    sortable: true,
-    width: '120px'
-  },
-  {
-    key: 'TrangThai',
-    title: 'Trạng thái',
-    type: 'badge',
-    sortable: true,
-    width: '120px',
-    badgeMap: {
-      'Đang mượn': 'badge-info',
-      'Đã trả': 'badge-success',
-      'Quá hạn': 'badge-danger'
-    }
-  }
-])
-
 // Computed properties
 const filteredRecords = computed(() => {
   if (!Array.isArray(recordsList.value)) return []
-  
+
   let filtered = recordsList.value
 
   // Filter by search query
@@ -362,15 +549,9 @@ const filteredRecords = computed(() => {
   return filtered
 })
 
-const totalPages = computed(() => {
-  if (!Array.isArray(filteredRecords.value)) return 0
-  return Math.ceil(filteredRecords.value.length / itemsPerPage.value)
-})
-
 const startIndex = computed(() => (currentPage.value - 1) * itemsPerPage.value)
 const endIndex = computed(() => {
-  if (!Array.isArray(filteredRecords.value)) return 0
-  return Math.min(startIndex.value + itemsPerPage.value, filteredRecords.value.length)
+  return Math.min(startIndex.value + itemsPerPage.value, totalItems.value)
 })
 
 const paginatedRecords = computed(() => {
@@ -380,8 +561,9 @@ const paginatedRecords = computed(() => {
 
 const visiblePages = computed(() => {
   const pages = []
+  const totalPagesComputed = Math.ceil(filteredRecords.value.length / itemsPerPage.value)
   const start = Math.max(1, currentPage.value - 2)
-  const end = Math.min(totalPages.value, currentPage.value + 2)
+  const end = Math.min(totalPagesComputed, currentPage.value + 2)
 
   for (let i = start; i <= end; i++) {
     pages.push(i)
@@ -390,7 +572,7 @@ const visiblePages = computed(() => {
 })
 
 const availableBooks = computed(() => {
-  return sachList.value.filter(sach => sach.SoQuyen > 0)
+  return sachList.value.filter(sach => (sach.SoQuyenConLai || sach.SoQuyen) > 0)
 })
 
 const tomorrow = computed(() => {
@@ -405,109 +587,61 @@ const loadRecords = async () => {
 
   try {
     const response = await api.get('/theodoimuonsach')
-    const apiData = response.data.data?.theodoimuonsach || response.data.data || []
+    console.log('API Response:', response.data)
 
-    if (Array.isArray(apiData) && apiData.length > 0) {
-      recordsList.value = apiData
+    if (response.data.success) {
+      recordsList.value = response.data.data || []
+      totalItems.value = response.data.pagination?.totalItems || recordsList.value.length
+      console.log('Loaded records:', recordsList.value)
     } else {
-      console.log('API returned empty or invalid data, using mock data')
-
+      recordsList.value = []
+      totalItems.value = 0
     }
   } catch (error) {
     console.error('Error loading records from API:', error)
-    console.log('Using mock data as fallback')
-
+    recordsList.value = []
+    totalItems.value = 0
   } finally {
     loading.value = false
-    if (!Array.isArray(recordsList.value) || recordsList.value.length === 0) {
-
-    }
   }
 }
 
 const loadDocGia = async () => {
-  const mockDocGia = [
-    { MaDocGia: 'DG001', HoLot: 'Nguyễn Văn', Ten: 'An' },
-    { MaDocGia: 'DG002', HoLot: 'Trần Thị', Ten: 'Bình' },
-    { MaDocGia: 'DG003', HoLot: 'Lê Văn', Ten: 'Cường' },
-    { MaDocGia: 'DG004', HoLot: 'Phạm Thị', Ten: 'Dung' },
-    { MaDocGia: 'DG005', HoLot: 'Hoàng Văn', Ten: 'Em' }
-  ]
-
   try {
     const response = await api.get('/docgia')
-    const apiData = response.data.data?.docgia || response.data.data || []
-    
-    if (Array.isArray(apiData) && apiData.length > 0) {
-      docGiaList.value = apiData
+    if (response.data.success) {
+      const apiData = response.data.data?.docgia || response.data.data || []
+      docGiaList.value = Array.isArray(apiData) ? apiData : []
     } else {
-      docGiaList.value = mockDocGia
+      docGiaList.value = []
     }
   } catch (error) {
     console.error('Error loading doc gia:', error)
-    docGiaList.value = mockDocGia
+    docGiaList.value = []
   }
 }
 
 const loadSach = async () => {
-  const mockSach = [
-    { MaSach: 'S001', TenSach: 'Lập trình JavaScript', SoQuyen: 10 },
-    { MaSach: 'S002', TenSach: 'Cơ sở dữ liệu', SoQuyen: 8 },
-    { MaSach: 'S003', TenSach: 'Mạng máy tính', SoQuyen: 12 },
-    { MaSach: 'S004', TenSach: 'Thuật toán và cấu trúc dữ liệu', SoQuyen: 15 },
-    { MaSach: 'S005', TenSach: 'Hệ điều hành Linux', SoQuyen: 6 }
-  ]
-
   try {
     const response = await api.get('/sach/available')
-    const apiData = response.data.data?.sach || response.data.data || []
-    
-    if (Array.isArray(apiData) && apiData.length > 0) {
-      sachList.value = apiData
+    if (response.data.success) {
+      const apiData = response.data.data || []
+      sachList.value = Array.isArray(apiData) ? apiData : []
     } else {
-      sachList.value = mockSach
+      sachList.value = []
     }
   } catch (error) {
     console.error('Error loading sach:', error)
-    sachList.value = mockSach
+    sachList.value = []
   }
 }
 
-const handleSearch = (query) => {
-  searchQuery.value = query
+const handleSearch = () => {
   currentPage.value = 1
 }
 
 const handleStatusFilter = () => {
   currentPage.value = 1
-}
-
-const handleAction = ({ action, item }) => {
-  switch (action) {
-    case 'view':
-      viewRecord(item)
-      break
-    case 'edit':
-      editRecord(item)
-      break
-    case 'delete':
-      // For borrow records, we don't delete but return books
-      if (item.TrangThai === 'Đang mượn') {
-        showReturnModal(item)
-      }
-      break
-  }
-}
-
-const viewRecord = (record) => {
-  // For now, just edit the record. Later can implement a view-only modal
-  editRecord(record)
-}
-
-const editRecord = (record) => {
-  if (record.TrangThai === 'Đang mượn') {
-    showExtendModal(record)
-  }
 }
 
 const formatDate = (dateString) => {
@@ -531,7 +665,8 @@ const clearSearch = () => {
 }
 
 const goToPage = (page) => {
-  if (page >= 1 && page <= totalPages.value) {
+  const totalPagesComputed = Math.ceil(filteredRecords.value.length / itemsPerPage.value)
+  if (page >= 1 && page <= totalPagesComputed) {
     currentPage.value = page
   }
 }
@@ -539,30 +674,72 @@ const goToPage = (page) => {
 // Helper methods
 const getReaderName = (record) => {
   if (record.MaDocGia && typeof record.MaDocGia === 'object') {
-    return `${record.MaDocGia.HoLot} ${record.MaDocGia.Ten}`
+    return `${record.MaDocGia.HoLot} ${record.MaDocGia.Ten}`.trim()
   }
-  // Fallback for string MaDocGia
+  // For string MaDocGia, find in docGiaList
   const docgia = docGiaList.value.find(d => d.MaDocGia === record.MaDocGia)
-  return docgia ? `${docgia.HoLot} ${docgia.Ten}` : record.MaDocGia
+  return docgia ? `${docgia.HoLot} ${docgia.Ten}`.trim() : record.MaDocGia || 'N/A'
 }
 
 const getBookTitle = (record) => {
   if (record.MaSach && typeof record.MaSach === 'object') {
     return record.MaSach.TenSach
   }
-  // Fallback for string MaSach
+  // For string MaSach, find in sachList
   const sach = sachList.value.find(s => s.MaSach === record.MaSach)
-  return sach ? sach.TenSach : record.MaSach
+  return sach ? sach.TenSach : record.MaSach || 'N/A'
+}
+
+// Additional helper methods for details modal
+const getDocGiaCode = (record) => {
+  if (record.MaDocGia && typeof record.MaDocGia === 'object') {
+    return record.MaDocGia.MaDocGia || 'N/A'
+  }
+  return record.MaDocGia || 'N/A'
+}
+
+const getDocGiaPhone = (record) => {
+  if (record.MaDocGia && typeof record.MaDocGia === 'object') {
+    return record.MaDocGia.DienThoai || ''
+  }
+  // For string MaDocGia, find in docGiaList
+  const docgia = docGiaList.value.find(d => d.MaDocGia === record.MaDocGia)
+  return docgia ? docgia.DienThoai : ''
+}
+
+const getSachCode = (record) => {
+  if (record.MaSach && typeof record.MaSach === 'object') {
+    return record.MaSach.MaSach || 'N/A'
+  }
+  return record.MaSach || 'N/A'
+}
+
+const getSachAuthor = (record) => {
+  if (record.MaSach && typeof record.MaSach === 'object') {
+    return record.MaSach.NguonGoc || ''
+  }
+  // For string MaSach, find in sachList
+  const sach = sachList.value.find(s => s.MaSach === record.MaSach)
+  return sach ? sach.NguonGoc : ''
+}
+
+const getSachQuantity = (record) => {
+  if (record.MaSach && typeof record.MaSach === 'object') {
+    return record.MaSach.SoQuyen || 0
+  }
+  // For string MaSach, find in sachList
+  const sach = sachList.value.find(s => s.MaSach === record.MaSach)
+  return sach ? sach.SoQuyen : 0
 }
 
 
 
 const getDueDateClass = (record) => {
   if (record.TrangThai === 'Đã trả') return ''
-  
+
   const today = new Date()
   const dueDate = new Date(record.NgayHenTra)
-  
+
   if (dueDate < today) {
     return 'text-danger fw-bold'
   } else if (dueDate.getTime() - today.getTime() <= 3 * 24 * 60 * 60 * 1000) {
@@ -748,8 +925,25 @@ const extendDueDate = async () => {
 }
 
 const viewDetails = (record) => {
-  // TODO: Implement view details functionality
-  console.log('View details for:', record)
+  viewingRecord.value = record
+  showDetailsModalState.value = true
+}
+
+const closeDetailsModal = () => {
+  showDetailsModalState.value = false
+  viewingRecord.value = null
+}
+
+const showReturnModalFromDetails = () => {
+  const record = viewingRecord.value
+  closeDetailsModal()
+  showReturnModal(record)
+}
+
+const showExtendModalFromDetails = () => {
+  const record = viewingRecord.value
+  closeDetailsModal()
+  showExtendModal(record)
 }
 
 // Watch for search changes
@@ -758,10 +952,11 @@ watch([searchQuery, statusFilter], () => {
 })
 
 // Lifecycle
-onMounted(() => {
-  loadRecords()
-  loadDocGia()
-  loadSach()
+onMounted(async () => {
+  // Load reference data first
+  await Promise.all([loadDocGia(), loadSach()])
+  // Then load records
+  await loadRecords()
 })
 </script>
 
