@@ -5,7 +5,7 @@
             <div id="heroCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="3000">
                 <div class="carousel-inner rounded-4 shadow">
                     <div class="carousel-item active">
-                        <img src="/images/library-hero-1.svg" class="d-block w-100 hero-image" alt="Thư viện sách"
+                        <img src="/images/slider_1.jpg" class="d-block w-100 hero-image" alt="Thư viện sách"
                             @error="handleImageError">
                         <div class="carousel-caption d-none d-md-block">
                             <h2>Khám phá thế giới tri thức</h2>
@@ -13,7 +13,7 @@
                         </div>
                     </div>
                     <div class="carousel-item">
-                        <img src="/images/library-hero-2.svg" class="d-block w-100 hero-image" alt="Đọc sách"
+                        <img src="/images/slider_2.png" class="d-block w-100 hero-image" alt="Đọc sách"
                             @error="handleImageError">
                         <div class="carousel-caption d-none d-md-block">
                             <h2>Mượn sách dễ dàng</h2>
@@ -21,7 +21,7 @@
                         </div>
                     </div>
                     <div class="carousel-item">
-                        <img src="/images/library-hero-3.svg" class="d-block w-100 hero-image" alt="Học tập"
+                        <img src="/images/slider_3.jpg" class="d-block w-100 hero-image" alt="Học tập"
                             @error="handleImageError">
                         <div class="carousel-caption d-none d-md-block">
                             <h2>Không gian học tập lý tưởng</h2>
@@ -40,40 +40,14 @@
             </div>
         </div>
 
-        <!-- Search Section -->
-        <div class="search-section mb-5">
-            <div class="row justify-content-center">
-                <div class="col-md-8">
-                    <div class="card shadow-sm border-0">
-                        <div class="card-body p-4">
-                            <h4 class="text-center mb-4">
-                                <i class="fas fa-search text-primary me-2"></i>
-                                Tìm kiếm sách
-                            </h4>
-                            <form @submit.prevent="searchBooks" class="row g-3">
-                                <div class="col-md-8">
-                                    <input v-model="searchQuery" type="text" class="form-control form-control-lg"
-                                        placeholder="Nhập tên sách, tác giả hoặc từ khóa...">
-                                </div>
-                                <div class="col-md-4">
-                                    <button type="submit" class="btn btn-primary btn-lg w-100">
-                                        <i class="fas fa-search me-2"></i>
-                                        Tìm kiếm
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+        
 
         <!-- Categories Section -->
         <div class="categories-section mb-5">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2 class="mb-0">
                     <i class="fas fa-tags text-primary me-2"></i>
-                    Thể loại sách
+                    Các nhà xuất bản
                 </h2>
                 <router-link to="/categories" class="btn btn-outline-primary">
                     <i class="fas fa-eye me-1"></i>
@@ -167,43 +141,7 @@
             </div>
         </div>
 
-        <!-- Stats Section -->
-        <div class="stats-section">
-            <div class="card bg-light border-0">
-                <div class="card-body text-center py-5">
-                    <h3 class="mb-4">
-                        <i class="fas fa-chart-bar text-success me-2"></i>
-                        Thống kê thư viện
-                    </h3>
-                    <div class="row">
-                        <div class="col-md-3 col-6 mb-3">
-                            <div class="stat-item">
-                                <h2 class="text-primary">{{ stats.totalBooks }}</h2>
-                                <p class="text-muted mb-0">Tổng số sách</p>
-                            </div>
-                        </div>
-                        <div class="col-md-3 col-6 mb-3">
-                            <div class="stat-item">
-                                <h2 class="text-success">{{ stats.totalCategories }}</h2>
-                                <p class="text-muted mb-0">Thể loại</p>
-                            </div>
-                        </div>
-                        <div class="col-md-3 col-6 mb-3">
-                            <div class="stat-item">
-                                <h2 class="text-info">{{ stats.totalReaders }}</h2>
-                                <p class="text-muted mb-0">Độc giả</p>
-                            </div>
-                        </div>
-                        <div class="col-md-3 col-6 mb-3">
-                            <div class="stat-item">
-                                <h2 class="text-warning">{{ stats.totalBorrows }}</h2>
-                                <p class="text-muted mb-0">Lượt mượn</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+        
     </div>
 </template>
 

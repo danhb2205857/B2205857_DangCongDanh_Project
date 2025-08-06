@@ -23,9 +23,9 @@ export default {
         Sach.countDocuments(),
         NhaXuatBan.countDocuments(),
         NhanVien.countDocuments({ TrangThai: 'Đang làm việc' }),
-        TheoDoiMuonSach.countDocuments({ TrangThai: { $in: ['muon', 'qua_han'] } }),
+        TheoDoiMuonSach.countDocuments({ TrangThai: { $in: ['muon', 'qua_han', 'Đang mượn', 'Quá hạn'] } }),
         TheoDoiMuonSach.countDocuments({
-          TrangThai: { $in: ['muon', 'qua_han'] },
+          TrangThai: { $in: ['muon', 'qua_han', 'Đang mượn', 'Quá hạn'] },
           NgayHenTra: { $lt: new Date() }
         })
       ]);
@@ -108,17 +108,18 @@ export default {
   async getRecentActivities(req, res) {
       const limit = Math.min(20, Math.max(1, parseInt(req.query.limit) || 10));
 
-      // Get recent borrows and returns
-      const recentTransactions = await TheoDoiMuonSach.find()
-        .populate('MaDocGia', 'MaDocGia HoLot Ten')
-        .populate('MaSach', 'MaSach TenSach')
-        .populate('NhanVienMuon', 'MSNV HoTenNV')
-        .populate('NhanVienTra', 'MSNV HoTenNV')
+      // Get recent borrows and returns (fix: skip populate if ref is not ObjectId)
+      let recentTransactions = await TheoDoiMuonSach.find()
         .sort({ updatedAt: -1 })
-        .limit(limit);
+        .limit(limit)
+        .lean();
 
-      // Get recent new readers
-      const recentReaders = await DocGia.find()
+      // If MaDocGia, MaSach, NhanVienMuon, NhanVienTra are ObjectId, populate; else, leave as is
+      // This code assumes MaDocGia, MaSach, NhanVienMuon, NhanVienTra are string (not ObjectId), so skip populate
+      // If you want to support both, you can check type and populate only if ObjectId
+
+      // Get recent new readers (fix: avoid aggregation on string _id)
+      const recentReaders = await DocGia.find({})
         .select('MaDocGia HoLot Ten createdAt')
         .sort({ createdAt: -1 })
         .limit(5);

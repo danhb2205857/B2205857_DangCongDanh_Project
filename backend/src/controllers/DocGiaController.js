@@ -504,5 +504,115 @@ export default {
       success: true,
       message: 'Đổi mật khẩu thành công'
     });
+  },
+
+  /**
+   * GET /api/docgia/my-borrows - Lấy danh sách sách đang mượn
+   */
+  async getMyBorrows(req, res) {
+    console.log('Getting borrowed books for DocGia:', req.user.MaDocGia);
+    
+    try {
+      // Tìm các bản ghi mượn sách chưa trả của độc giả
+      const borrowRecords = await TheoDoiMuonSach.find({
+        MaDocGia: req.user.MaDocGia,
+        NgayTra: null // Chưa trả
+      }).populate('MaSach', 'TenSach TacGia AnhBia MaNhaXuatBan')
+        .populate('MaNhaXuatBan', 'TenNhaXuatBan')
+        .sort({ NgayMuon: -1 });
+
+      // Format dữ liệu trả về
+      const borrowedBooks = borrowRecords.map(record => ({
+        _id: record._id,
+        TenSach: record.MaSach?.TenSach || 'N/A',
+        TacGia: record.MaSach?.TacGia || 'N/A',
+        AnhBia: record.MaSach?.AnhBia || null,
+        TenNhaXuatBan: record.MaNhaXuatBan?.TenNhaXuatBan || 'N/A',
+        NgayMuon: record.NgayMuon,
+        NgayHenTra: record.NgayHenTra,
+        MaSach: record.MaSach?._id,
+        MaDocGia: record.MaDocGia
+      }));
+
+      res.json({
+        success: true,
+        message: 'Lấy danh sách sách đang mượn thành công',
+        data: borrowedBooks
+      });
+    } catch (error) {
+      console.error('Error getting borrowed books:', error);
+      throw new AppError('Không thể lấy danh sách sách đang mượn', 500, 'GET_BORROWS_ERROR');
+    }
+  },
+
+  /**
+   * GET /api/docgia/borrow-history - Lấy lịch sử mượn sách
+   */
+  async getBorrowHistory(req, res) {
+    console.log('Getting borrow history for DocGia:', req.user.MaDocGia);
+    
+    try {
+      const page = Math.max(1, parseInt(req.query.page) || 1);
+      const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 10));
+      const status = req.query.status; // 'returned', 'borrowing', or undefined for all
+
+      // Build query
+      let query = { MaDocGia: req.user.MaDocGia };
+      
+      if (status === 'returned') {
+        query.NgayTra = { $ne: null };
+      } else if (status === 'borrowing') {
+        query.NgayTra = null;
+      }
+
+      // Get total count
+      const total = await TheoDoiMuonSach.countDocuments(query);
+
+      // Get records with pagination
+      const skip = (page - 1) * limit;
+      const borrowRecords = await TheoDoiMuonSach.find(query)
+        .populate('MaSach', 'TenSach TacGia AnhBia MaNhaXuatBan')
+        .populate('MaNhaXuatBan', 'TenNhaXuatBan')
+        .sort({ NgayMuon: -1 })
+        .skip(skip)
+        .limit(limit);
+
+      // Format dữ liệu trả về
+      const history = borrowRecords.map(record => ({
+        _id: record._id,
+        TenSach: record.MaSach?.TenSach || 'N/A',
+        TacGia: record.MaSach?.TacGia || 'N/A',
+        AnhBia: record.MaSach?.AnhBia || null,
+        TenNhaXuatBan: record.MaNhaXuatBan?.TenNhaXuatBan || 'N/A',
+        NgayMuon: record.NgayMuon,
+        NgayHenTra: record.NgayHenTra,
+        NgayTra: record.NgayTra,
+        MaSach: record.MaSach?._id,
+        MaDocGia: record.MaDocGia
+      }));
+
+      // Build pagination info
+      const totalPages = Math.ceil(total / limit);
+      const pagination = {
+        currentPage: page,
+        totalPages,
+        totalItems: total,
+        itemsPerPage: limit,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1
+      };
+
+      res.json({
+        success: true,
+        message: 'Lấy lịch sử mượn sách thành công',
+        data: {
+          history,
+          pagination
+        }
+      });
+    } catch (error) {
+      console.error('Error getting borrow history:', error);
+      throw new AppError('Không thể lấy lịch sử mượn sách', 500, 'GET_HISTORY_ERROR');
+    }
   }
 };

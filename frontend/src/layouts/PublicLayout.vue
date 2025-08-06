@@ -1,5 +1,6 @@
 <template>
   <div class="public-layout">
+    <div class="container">
     <!-- Header -->
     <PublicHeader />
     
@@ -22,6 +23,7 @@
         <p class="mt-3 text-muted">Đang tải dữ liệu...</p>
       </div>
     </div>
+  </div>
   </div>
 </template>
 

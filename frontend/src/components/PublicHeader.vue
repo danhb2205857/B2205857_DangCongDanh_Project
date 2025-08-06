@@ -26,14 +26,15 @@
 
             <li class="nav-item dropdown">
               <a class="nav-link dropdown-toggle" href="#" id="categoriesDropdown" role="button"
-                data-bs-toggle="dropdown" aria-expanded="false"
+                @click.prevent="toggleCategoriesDropdown"
+                :aria-expanded="showCategoriesDropdown"
                 :class="{ active: $route.name === 'Categories' || $route.name === 'CategoryBooks' }">
                 <i class="fas fa-tags me-1"></i>
                 Nhà xuất bản
               </a>
-              <ul class="dropdown-menu" aria-labelledby="categoriesDropdown">
+              <ul class="dropdown-menu" :class="{ show: showCategoriesDropdown }" aria-labelledby="categoriesDropdown">
                 <li>
-                  <router-link to="/categories" class="dropdown-item">
+                  <router-link to="/categories" class="dropdown-item" @click="closeDropdowns">
                     <i class="fas fa-list me-2"></i>
                     Tất cả nhà xuất bản
                   </router-link>
@@ -42,7 +43,7 @@
                   <hr class="dropdown-divider">
                 </li>
                 <li v-for="category in topCategories" :key="category.MaNhaXuatBan">
-                  <router-link :to="`/categories/${category.MaNhaXuatBan}`" class="dropdown-item">
+                  <router-link :to="`/categories/${category.MaNhaXuatBan}`" class="dropdown-item" @click="closeDropdowns">
                     {{ category.TenNhaXuatBan }}
                   </router-link>
                 </li>
@@ -89,24 +90,25 @@
           <ul class="navbar-nav mb-2 mb-lg-0 ms-3">
             <li class="nav-item dropdown" v-if="isAuthenticated">
               <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button"
-                data-bs-toggle="dropdown" aria-expanded="false">
+                @click.prevent="toggleUserDropdown"
+                :aria-expanded="showUserDropdown">
                 <img :src="user.avatar || '/images/avatar-default.svg'" alt="Avatar"
                   class="rounded-circle me-2 user-avatar" @error="handleAvatarError">
                 <span class="me-2">{{ user.HoLot }} {{ user.Ten }}</span>
               </a>
-              <ul class="dropdown-menu dropdown-menu-end">
+              <ul class="dropdown-menu dropdown-menu-end" :class="{ show: showUserDropdown }">
                 <li>
-                  <router-link to="/profile" class="dropdown-item">
+                  <router-link to="/profile" class="dropdown-item" @click="closeDropdowns">
                     <i class="fas fa-user me-2"></i>Trang cá nhân
                   </router-link>
                 </li>
                 <li>
-                  <router-link to="/my-borrows" class="dropdown-item">
+                  <router-link to="/my-borrows" class="dropdown-item" @click="closeDropdowns">
                     <i class="fas fa-book me-2"></i>Sách đang mượn
                   </router-link>
                 </li>
                 <li>
-                  <router-link to="/borrow-history" class="dropdown-item">
+                  <router-link to="/borrow-history" class="dropdown-item" @click="closeDropdowns">
                     <i class="fas fa-history me-2"></i>Lịch sử mượn
                   </router-link>
                 </li>
@@ -114,7 +116,7 @@
                   <hr class="dropdown-divider">
                 </li>
                 <li>
-                  <button @click="logout" class="dropdown-item">
+                  <button @click="handleLogout" class="dropdown-item">
                     <i class="fas fa-sign-out-alt me-2"></i>Đăng xuất
                   </button>
                 </li>
@@ -122,19 +124,20 @@
             </li>
 
             <li class="nav-item dropdown" v-else>
-              <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown"
-                aria-expanded="false">
+              <a class="nav-link dropdown-toggle" href="#" role="button"
+                @click.prevent="toggleUserDropdown"
+                :aria-expanded="showUserDropdown">
                 <i class="fas fa-user-circle me-1"></i>
                 Tài khoản
               </a>
-              <ul class="dropdown-menu dropdown-menu-end">
+              <ul class="dropdown-menu dropdown-menu-end" :class="{ show: showUserDropdown }">
                 <li>
-                  <router-link to="/login" class="dropdown-item">
+                  <router-link to="/login" class="dropdown-item" @click="closeDropdowns">
                     <i class="fas fa-sign-in-alt me-2"></i>Đăng nhập
                   </router-link>
                 </li>
                 <li>
-                  <router-link to="/register" class="dropdown-item">
+                  <router-link to="/register" class="dropdown-item" @click="closeDropdowns">
                     <i class="fas fa-user-plus me-2"></i>Đăng ký
                   </router-link>
                 </li>
@@ -165,16 +168,18 @@ import axios from '@/utils/axios'
 export default {
   setup() {
     const router = useRouter()
-    const { user, isAuthenticated, logout: authLogout } = useAuth()
+    const { user, isAuthenticated, logout } = useAuth()
 
     const searchQuery = ref('')
     const topCategories = ref([])
     const message = ref('')
     const messageType = ref('success')
+    const showUserDropdown = ref(false)
+    const showCategoriesDropdown = ref(false)
 
     const loadTopCategories = async () => {
       try {
-        const response = await axios.get('/api/nhaxuatban?limit=5&sortBy=TenNhaXuatBan')
+        const response = await axios.get('/nhaxuatban?limit=5&sortBy=TenNhaXuatBan')
         topCategories.value = response.data.data.nhaxuatban || []
       } catch (error) {
         console.error('Error loading categories:', error)
@@ -191,15 +196,10 @@ export default {
       }
     }
 
-    const logout = async () => {
-      try {
-        await authLogout()
-        showMessage('Đăng xuất thành công!', 'success')
-        router.push('/')
-      } catch (error) {
-        console.error('Logout error:', error)
-        showMessage('Có lỗi xảy ra khi đăng xuất!', 'error')
-      }
+    const handleLogout = async () => {
+      await logout()
+      closeDropdowns()
+      router.push('/login')
     }
 
     const showMessage = (msg, type = 'success') => {
@@ -226,6 +226,21 @@ export default {
       event.target.src = '/images/avatar-default.svg'
     }
 
+    const toggleUserDropdown = () => {
+      showUserDropdown.value = !showUserDropdown.value
+      showCategoriesDropdown.value = false
+    }
+
+    const toggleCategoriesDropdown = () => {
+      showCategoriesDropdown.value = !showCategoriesDropdown.value
+      showUserDropdown.value = false
+    }
+
+    const closeDropdowns = () => {
+      showUserDropdown.value = false
+      showCategoriesDropdown.value = false
+    }
+
     // Listen for global messages
     const handleGlobalMessage = (event) => {
       if (event.detail) {
@@ -236,6 +251,15 @@ export default {
     onMounted(() => {
       loadTopCategories()
       window.addEventListener('show-message', handleGlobalMessage)
+      
+      // Close dropdowns when clicking outside
+      document.addEventListener('click', (event) => {
+        const target = event.target
+        const isDropdownClick = target.closest('.dropdown')
+        if (!isDropdownClick) {
+          closeDropdowns()
+        }
+      })
     })
 
     return {
@@ -245,11 +269,17 @@ export default {
       messageType,
       user,
       isAuthenticated,
+      showUserDropdown,
+      showCategoriesDropdown,
       handleSearch,
       logout,
+      handleLogout,
       clearMessage,
       handleLogoError,
-      handleAvatarError
+      handleAvatarError,
+      toggleUserDropdown,
+      toggleCategoriesDropdown,
+      closeDropdowns
     }
   }
 }
@@ -344,5 +374,48 @@ export default {
 
 .dropdown-menu::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
+}
+
+/* Dropdown animation */
+.dropdown-menu {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: all 0.2s ease-in-out;
+}
+
+.dropdown-menu.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+/* Ensure dropdown is positioned correctly */
+.dropdown {
+  position: relative;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 1000;
+  display: block;
+  min-width: 10rem;
+  padding: 0.5rem 0;
+  margin: 0.125rem 0 0;
+  font-size: 1rem;
+  color: #212529;
+  text-align: left;
+  list-style: none;
+  background-color: #fff;
+  background-clip: padding-box;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 0.375rem;
+}
+
+.dropdown-menu-end {
+  right: 0;
+  left: auto;
 }
 </style>

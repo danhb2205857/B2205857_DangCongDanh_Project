@@ -79,9 +79,9 @@
 - Price formatting (VND)
 - Stock status badges
 
-#### `UserProfile.vue`
+#### `Profile.vue`
 
-- Trang profile người dùng
+- Trang profile độc giả
 - Quản lý thông tin cá nhân
 - Lịch sử mượn sách
 - Sách đang mượn
@@ -106,9 +106,9 @@
 ├── categories/:id (BooksList) - Sách theo nhà xuất bản
 ├── books (BooksList) - Tất cả sách
 ├── books/:id (BookDetail) - Chi tiết sách
-├── profile (UserProfile) - Profile người dùng
-├── my-borrows (UserProfile) - Sách đang mượn
-├── borrow-history (UserProfile) - Lịch sử mượn
+├── profile (Profile) - Profile người dùng
+├── my-borrows (MyBorrows) - Sách đang mượn
+├── borrow-history (BorrowHistory) - Lịch sử mượn
 └── about/contact/help/privacy/terms (Static pages)
 
 /login - Đăng nhập
@@ -193,7 +193,7 @@ views/
 ├── PublicHome.vue
 ├── Categories.vue
 ├── BooksList.vue
-├── UserProfile.vue
+├── Profile.vue
 └── ...
 ```
 
@@ -229,7 +229,7 @@ Các view PHP đã được chuyển đổi:
 - `app/Views/layouts/footer.php` → `PublicFooter.vue`
 - `app/Views/pages/home.php` → `PublicHome.vue`
 - `app/Views/category/index.php` → `Categories.vue`
-- `app/Views/user/profile.php` → `UserProfile.vue`
+- `app/Views/user/profile.php` → `Profile.vue`
 - `app/Views/auth/login.php` → Existing `Login.vue`
 
 Các thay đổi chính:

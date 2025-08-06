@@ -46,7 +46,17 @@
 
     <!-- Today's Stats Row -->
     <div class="row mb-4">
-      <div class="col-lg-12">
+      <div class="col-lg-6 mb-4">
+        <div class="card shadow">
+          <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Thống kê mượn/trả 7 ngày gần nhất</h6>
+          </div>
+          <div class="card-body">
+            <DashboardChart :chartData="chartData" :options="chartOptions" type="bar" />
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-6 mb-4">
         <div class="card shadow">
           <div class="card-header py-3">
             <h6 class="m-0 font-weight-bold text-primary">Thống kê hôm nay</h6>
@@ -150,7 +160,14 @@
                       <div class="font-weight-bold">
                         {{ getReaderName(transaction.MaDocGia) }}
                       </div>
-                      <small class="text-muted">{{ transaction.MaDocGia?.MaDocGia || transaction.MaDocGia }}</small>
+                      <small class="text-muted">
+                        <template v-if="typeof transaction.MaDocGia === 'object' && transaction.MaDocGia && transaction.MaDocGia.MaDocGia">
+                          {{ transaction.MaDocGia.MaDocGia }}
+                        </template>
+                        <template v-else-if="typeof transaction.MaDocGia === 'string'">
+                          {{ transaction.MaDocGia }}
+                        </template>
+                      </small>
                     </td>
                     <td>
                       <div>{{ getBookTitle(transaction.MaSach) }}</div>
@@ -167,6 +184,20 @@
                 </tbody>
               </table>
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Borrow/Return Stats Chart -->
+    <div class="row mb-4">
+      <div class="col-lg-12">
+        <div class="card shadow">
+          <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Thống kê mượn/trả sách 7 ngày</h6>
+          </div>
+          <div class="card-body">
+            <DashboardChart :chartData="chartData" :options="chartOptions" />
           </div>
         </div>
       </div>
@@ -196,6 +227,7 @@
 import { ref, onMounted } from 'vue'
 import api from '../utils/axios.js'
 import StatsCard from '../components/StatsCard.vue'
+import DashboardChart from '../components/DashboardChart.vue'
 
 const loading = ref(false)
 const stats = ref({
@@ -205,6 +237,17 @@ const stats = ref({
 const recentBooks = ref([])
 const recentTransactions = ref([])
 const recentReaders = ref([])
+const chartData = ref({
+  labels: [],
+  datasets: []
+})
+const chartOptions = ref({
+  responsive: true,
+  plugins: {
+    legend: { position: 'top' },
+    title: { display: true, text: 'Thống kê mượn/trả sách 7 ngày gần nhất' }
+  }
+})
 
 const loadDashboardStats = async () => {
   try {
@@ -214,23 +257,8 @@ const loadDashboardStats = async () => {
     }
   } catch (error) {
     console.error('Error loading dashboard stats:', error)
-    // Fallback to mock data for development
-    stats.value = {
-      overview: {
-        totalBooks: 1250,
-        totalReaders: 340,
-        activeBorrows: 89,
-        totalPublishers: 45,
-        overdueBorrows: 12,
-        totalQuantity: 2500,
-        availableBooks: 1161
-      },
-      today: {
-        borrows: 8,
-        returns: 5,
-        newReaders: 2
-      }
-    }
+    // Nếu lỗi, chỉ log lỗi, không dùng dữ liệu mock nữa
+    stats.value = { overview: {}, today: {} }
   }
 }
 
@@ -245,21 +273,44 @@ const loadRecentActivities = async () => {
     }
   } catch (error) {
     console.error('Error loading recent activities:', error)
-    // Fallback to mock data
-    recentBooks.value = [
-      { MaSach: 'S001', TenSach: 'Lập trình JavaScript', NguonGoc: 'Nguyễn Văn A', NamXuatBan: 2023 },
-      { MaSach: 'S002', TenSach: 'Cơ sở dữ liệu', NguonGoc: 'Trần Thị B', NamXuatBan: 2023 },
-      { MaSach: 'S003', TenSach: 'Mạng máy tính', NguonGoc: 'Lê Văn C', NamXuatBan: 2022 }
-    ]
-    recentTransactions.value = [
-      {
-        MaTheoDoiMuonSach: 'TD001',
-        MaDocGia: { MaDocGia: 'DG001', HoLot: 'Nguyễn Văn', Ten: 'An' },
-        MaSach: { MaSach: 'S001', TenSach: 'Lập trình JavaScript' },
-        TrangThai: 'Đang mượn',
-        NgayMuon: '2024-01-15'
+    // Nếu lỗi, chỉ log lỗi, không dùng dữ liệu mock nữa
+    recentBooks.value = []
+    recentTransactions.value = []
+    recentReaders.value = []
+  }
+}
+
+const loadChartData = async () => {
+  try {
+    // Use the correct endpoint for chart data
+    const response = await api.get('/dashboard/charts?period=7days')
+    if (response.data.success) {
+      const data = response.data.data;
+      // Defensive: ensure data.borrowTrends exists and is an array
+      const trends = Array.isArray(data.borrowTrends) ? data.borrowTrends : [];
+      chartData.value = {
+        labels: trends.map(item => item._id),
+        datasets: [
+          {
+            label: 'Lượt mượn',
+            backgroundColor: '#36b9cc',
+            borderColor: '#36b9cc',
+            data: trends.map(item => item.borrows),
+            type: 'bar'
+          },
+          {
+            label: 'Lượt trả',
+            backgroundColor: '#1cc88a',
+            borderColor: '#1cc88a',
+            data: trends.map(item => item.returns),
+            type: 'bar'
+          }
+        ]
       }
-    ]
+    }
+  } catch (error) {
+    // Nếu lỗi, chỉ log lỗi, không dùng dữ liệu mock nữa
+    chartData.value = { labels: [], datasets: [] }
   }
 }
 
@@ -268,7 +319,8 @@ const loadDashboardData = async () => {
   try {
     await Promise.all([
       loadDashboardStats(),
-      loadRecentActivities()
+      loadRecentActivities(),
+      loadChartData()
     ])
   } finally {
     loading.value = false
@@ -290,9 +342,16 @@ const formatDate = (dateString) => {
 
 const getReaderName = (docgia) => {
   if (typeof docgia === 'object' && docgia !== null) {
-    return `${docgia.HoLot} ${docgia.Ten}`.trim()
+    // Ưu tiên hiện tên đầy đủ nếu có
+    if (docgia.HoLot || docgia.Ten) {
+      return `${docgia.HoLot ? docgia.HoLot : ''} ${docgia.Ten ? docgia.Ten : ''}`.trim();
+    }
+    // Nếu không có tên, thử hiện MaDocGia
+    if (docgia.MaDocGia) return docgia.MaDocGia;
+    // Nếu là object nhưng không có gì, stringify
+    return JSON.stringify(docgia);
   }
-  return docgia || '-'
+  return docgia || '-';
 }
 
 const getBookTitle = (sach) => {

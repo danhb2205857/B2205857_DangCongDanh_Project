@@ -161,25 +161,6 @@
       </div>
     </div>
 
-    <!-- Copyright Section -->
-    <div class="bg-primary text-white py-3">
-      <div class="container">
-        <div class="row align-items-center">
-          <div class="col-md-6 text-center text-md-start">
-            <p class="mb-0">
-              <i class="fas fa-copyright me-1"></i>
-              {{ currentYear }} Thư viện sách điện tử. All rights reserved.
-            </p>
-          </div>
-          <div class="col-md-6 text-center text-md-end">
-            <p class="mb-0">
-              <i class="fas fa-code me-1"></i>
-              Phát triển bởi <strong>Nhóm phát triển</strong>
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
 
     <!-- Back to Top Button -->
     <button 

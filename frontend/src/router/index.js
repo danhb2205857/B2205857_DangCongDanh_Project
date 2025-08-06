@@ -16,10 +16,11 @@ const AdminLayout = () => import("../layouts/AdminLayout.vue");
 // Public interface components
 const PublicLayout = () => import("../layouts/PublicLayout.vue");
 const PublicHome = () => import("../views/PublicHome.vue");
-const Categories = () => import("../views/Categories.vue");
 const BooksList = () => import("../views/BooksList.vue");
 const BookDetail = () => import("../views/BookDetail.vue");
-const UserProfile = () => import("../views/UserProfile.vue");
+const Profile = () => import("../views/Profile.vue");
+const MyBorrows = () => import("../views/MyBorrows.vue");
+const BorrowHistory = () => import("../views/BorrowHistory.vue");
 const About = () => import("../views/About.vue");
 const Contact = () => import("../views/Contact.vue");
 const Help = () => import("../views/Help.vue");
@@ -33,13 +34,12 @@ const routes = [
     component: PublicLayout,
     children: [
       { path: "", name: "PublicHome", component: PublicHome },
-      { path: "categories", name: "Categories", component: Categories },
       { path: "categories/:id", name: "CategoryBooks", component: BooksList },
       { path: "books", name: "Books", component: BooksList },
       { path: "books/:id", name: "BookDetail", component: BookDetail },
-      { path: "profile", name: "UserProfile", component: UserProfile },
-      { path: "my-borrows", name: "MyBorrows", component: UserProfile },
-      { path: "borrow-history", name: "BorrowHistory", component: UserProfile },
+      { path: "profile", name: "Profile", component: Profile },
+      { path: "my-borrows", name: "MyBorrows", component: MyBorrows },
+      { path: "borrow-history", name: "BorrowHistory", component: BorrowHistory },
       { path: "about", name: "About", component: About },
       { path: "contact", name: "Contact", component: Contact },
       { path: "help", name: "Help", component: Help },
@@ -72,7 +72,6 @@ const routes = [
       { path: "profile", name: "AdminProfile", component: Dashboard },
     ],
   },
-
 ];
 
 const router = createRouter({
@@ -80,9 +79,10 @@ const router = createRouter({
   routes,
 });
 
-// Navigation guard for authentication - COMMENTED FOR TESTING
-/* router.beforeEach((to, from, next) => {
+// Navigation guard for authentication
+router.beforeEach((to, from, next) => {
   const token = localStorage.getItem("token");
+  const userRole = localStorage.getItem("userRole");
 
   // Public routes that don't require authentication
   const publicRoutes = [
@@ -98,16 +98,19 @@ const router = createRouter({
     "/terms",
   ];
 
-  // Routes that require authentication
-  const authRequiredRoutes = ["/profile", "/my-borrows", "/borrow-history"];
+  // Routes that require reader authentication
+  const readerAuthRoutes = ["/profile", "/my-borrows", "/borrow-history"];
 
-  // Admin routes
+  // Admin routes that require staff authentication
   const adminRoutes = ["/admin"];
 
   // Check if current route requires authentication
-  const requiresAuth =
-    authRequiredRoutes.some((route) => to.path.startsWith(route)) ||
-    adminRoutes.some((route) => to.path.startsWith(route));
+  const requiresReaderAuth = readerAuthRoutes.some((route) =>
+    to.path.startsWith(route)
+  );
+  const requiresAdminAuth = adminRoutes.some((route) =>
+    to.path.startsWith(route)
+  );
 
   // Check if it's a public route
   const isPublicRoute =
@@ -115,23 +118,17 @@ const router = createRouter({
     to.path.startsWith("/categories/") ||
     to.path.startsWith("/books/");
 
-  if (requiresAuth && !token) {
+  if ((requiresReaderAuth || requiresAdminAuth) && !token) {
     // Redirect to login if authentication required but not authenticated
-    next("/login");
+    next({ path: "/login", query: { redirect: to.fullPath } });
   } else if ((to.path === "/login" || to.path === "/register") && token) {
     // Redirect authenticated users away from login/register
-    // Check if user is admin or regular user
-    try {
-      const user = JSON.parse(localStorage.getItem("user") || "{}");
-      if (user.quyen && user.quyen.includes("quan_ly")) {
-        next("/admin");
-      } else {
-        next("/");
-      }
-    } catch {
+    if (userRole === "staff") {
+      next("/admin");
+    } else {
       next("/");
     }
-  } else if (token && requiresAuth) {
+  } else if (token && (requiresReaderAuth || requiresAdminAuth)) {
     // Check token expiration for authenticated routes
     try {
       // Validate JWT token format and expiration
@@ -150,16 +147,16 @@ const router = createRouter({
         // Token expired
         localStorage.removeItem("token");
         localStorage.removeItem("user");
-        next("/login");
+        localStorage.removeItem("userRole");
+        next({ path: "/login", query: { redirect: to.fullPath } });
       } else {
-        // Check admin access for admin routes
-        if (to.path.startsWith("/admin")) {
-          const user = JSON.parse(localStorage.getItem("user") || "{}");
-          if (!user.quyen || !user.quyen.includes("quan_ly")) {
-            next("/"); // Redirect non-admin users to home
-          } else {
-            next();
-          }
+        // Check role-based access
+        if (requiresAdminAuth && userRole !== "staff") {
+          // Admin route but not staff user
+          next("/");
+        } else if (requiresReaderAuth && userRole !== "reader") {
+          // Reader route but not reader user
+          next("/admin");
         } else {
           next();
         }
@@ -168,14 +165,12 @@ const router = createRouter({
       // Invalid token, clear storage and redirect to login
       localStorage.removeItem("token");
       localStorage.removeItem("user");
-      next("/login");
+      localStorage.removeItem("userRole");
+      next({ path: "/login", query: { redirect: to.fullPath } });
     }
   } else {
     next();
   }
 });
-
-export default router;
- */
 
 export default router;

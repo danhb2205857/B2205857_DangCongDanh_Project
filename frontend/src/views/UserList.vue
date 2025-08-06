@@ -9,13 +9,8 @@
           <div class="card-body">
             <div class="row mb-3">
               <div class="col-md-6">
-                <input 
-                  type="text" 
-                  class="form-control" 
-                  placeholder="Tìm kiếm độc giả..."
-                  v-model="searchQuery"
-                  @input="handleSearch"
-                >
+                <input type="text" class="form-control" placeholder="Tìm kiếm độc giả..." v-model="searchQuery"
+                  @input="handleSearch">
               </div>
               <div class="col-md-6 text-end">
                 <button class="btn btn-primary" @click="showAddModal = true">
@@ -23,7 +18,7 @@
                 </button>
               </div>
             </div>
-            
+
             <div class="table-responsive">
               <table class="table table-hover">
                 <thead>
@@ -61,7 +56,7 @@
                 </tbody>
               </table>
             </div>
-            
+
             <div v-if="loading" class="text-center py-4">
               <div class="spinner-border" role="status">
                 <span class="visually-hidden">Loading...</span>

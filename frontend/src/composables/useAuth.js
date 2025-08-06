@@ -4,62 +4,133 @@ import axios from "@/utils/axios";
 
 // Global state cho authentication
 const token = ref(localStorage.getItem("token"));
-const user = ref((() => {
-  try {
-    const stored = localStorage.getItem("user");
-    return stored ? JSON.parse(stored) : null;
-  } catch (error) {
-    console.warn('Error parsing user from localStorage:', error);
-    return null;
-  }
-})());
+const user = ref(
+  (() => {
+    try {
+      const stored = localStorage.getItem("user");
+      return stored ? JSON.parse(stored) : null;
+    } catch (error) {
+      console.warn("Error parsing user from localStorage:", error);
+      return null;
+    }
+  })()
+);
 
 export function useAuth() {
-
   // Computed properties
   const isAuthenticated = computed(() => !!token.value);
   const currentUser = computed(() => user.value || null);
 
-  // Login function
-  const login = async (credentials) => {
+  // Login function for readers (độc giả)
+  const loginReader = async (credentials) => {
     try {
-      // Gọi API login thực tế
-      const response = await axios.post('/auth/login', {
-        msnv: credentials.username,
-        password: credentials.password
+      const response = await axios.post("/docgia/login", {
+        email: credentials.email,
+        password: credentials.password,
       });
 
       // Lưu token và user info từ response
       token.value = response.data.data.token;
-      user.value = response.data.data.user;
+      user.value = response.data.data.docGia;
 
       localStorage.setItem("token", response.data.data.token);
-      try {
-        localStorage.setItem("user", JSON.stringify(response.data.data.user));
-      } catch (error) {
-        console.warn('Error saving user to localStorage:', error);
-      }
+      localStorage.setItem("user", JSON.stringify(response.data.data.docGia));
+      localStorage.setItem("userRole", "reader");
 
       // Set default Authorization header cho axios
       axios.defaults.headers.common[
         "Authorization"
       ] = `Bearer ${response.data.data.token}`;
 
-      return { success: true, user: response.data.data.user };
+      return { success: true, user: response.data.data.docGia };
     } catch (error) {
-      console.error("Login error:", error);
-      
-      // Xử lý các loại lỗi khác nhau
-      let errorMessage = 'Đăng nhập thất bại';
-      
+      console.error("Reader login error:", error);
+
+      let errorMessage = "Đăng nhập thất bại";
+
       if (error.response) {
-        // Server trả về error response
         errorMessage = error.response.data.message || errorMessage;
       } else if (error.request) {
-        // Không thể kết nối đến server
-        errorMessage = 'Không thể kết nối đến server';
+        errorMessage = "Không thể kết nối đến server";
       }
-      
+
+      return {
+        success: false,
+        error: errorMessage,
+      };
+    }
+  };
+
+  // Login function for staff (nhân viên) - keep existing
+  const loginStaff = async (credentials) => {
+    try {
+      const response = await axios.post("/auth/login", {
+        msnv: credentials.username,
+        password: credentials.password,
+      });
+
+      token.value = response.data.data.token;
+      user.value = response.data.data.user;
+
+      localStorage.setItem("token", response.data.data.token);
+      localStorage.setItem("user", JSON.stringify(response.data.data.user));
+      localStorage.setItem("userRole", "staff");
+
+      axios.defaults.headers.common[
+        "Authorization"
+      ] = `Bearer ${response.data.data.token}`;
+
+      return { success: true, user: response.data.data.user };
+    } catch (error) {
+      console.error("Staff login error:", error);
+
+      let errorMessage = "Đăng nhập thất bại";
+
+      if (error.response) {
+        errorMessage = error.response.data.message || errorMessage;
+      } else if (error.request) {
+        errorMessage = "Không thể kết nối đến server";
+      }
+
+      return {
+        success: false,
+        error: errorMessage,
+      };
+    }
+  };
+
+  // Generic login function (defaults to reader login for public)
+  const login = loginReader;
+
+  // Register function for readers
+  const register = async (userData) => {
+    try {
+      const response = await axios.post("/docgia/register", userData);
+
+      // Auto login after successful registration
+      token.value = response.data.data.token;
+      user.value = response.data.data.docGia;
+
+      localStorage.setItem("token", response.data.data.token);
+      localStorage.setItem("user", JSON.stringify(response.data.data.docGia));
+      localStorage.setItem("userRole", "reader");
+
+      axios.defaults.headers.common[
+        "Authorization"
+      ] = `Bearer ${response.data.data.token}`;
+
+      return { success: true, user: response.data.data.docGia };
+    } catch (error) {
+      console.error("Registration error:", error);
+
+      let errorMessage = "Đăng ký thất bại";
+
+      if (error.response) {
+        errorMessage = error.response.data.message || errorMessage;
+      } else if (error.request) {
+        errorMessage = "Không thể kết nối đến server";
+      }
+
       return {
         success: false,
         error: errorMessage,
@@ -70,30 +141,26 @@ export function useAuth() {
   // Logout function
   const logout = async () => {
     try {
-      // Gọi logout API
-      await axios.post('/auth/logout');
-
-      // Clear local storage
+      // Clear local storage first
       token.value = null;
       user.value = null;
       localStorage.removeItem("token");
       localStorage.removeItem("user");
+      localStorage.removeItem("userRole");
 
       // Remove Authorization header
       delete axios.defaults.headers.common["Authorization"];
 
-      // Note: Redirect should be handled by the component
-
       return { success: true };
     } catch (error) {
       console.error("Logout error:", error);
-      // Vẫn clear local data ngay cả khi API call thất bại
+      // Vẫn clear local data ngay cả khi có lỗi
       token.value = null;
       user.value = null;
       localStorage.removeItem("token");
       localStorage.removeItem("user");
+      localStorage.removeItem("userRole");
       delete axios.defaults.headers.common["Authorization"];
-      // Note: Redirect should be handled by the component
 
       return { success: false, error: error.message };
     }
@@ -118,13 +185,15 @@ export function useAuth() {
   // Refresh token if needed
   const refreshToken = async () => {
     try {
-      const response = await axios.post('/auth/refresh');
-      
+      const response = await axios.post("/auth/refresh");
+
       // Update token
       token.value = response.data.token;
-      localStorage.setItem('token', response.data.token);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
-      
+      localStorage.setItem("token", response.data.token);
+      axios.defaults.headers.common[
+        "Authorization"
+      ] = `Bearer ${response.data.token}`;
+
       return { success: true };
     } catch (error) {
       console.error("Refresh token error:", error);
@@ -143,6 +212,58 @@ export function useAuth() {
     }
   };
 
+  // Get user profile (for readers)
+  const getProfile = async () => {
+    try {
+      const response = await axios.get("/docgia/profile");
+      user.value = response.data.data;
+      localStorage.setItem("user", JSON.stringify(response.data.data));
+      return { success: true, user: response.data.data };
+    } catch (error) {
+      console.error("Get profile error:", error);
+      return {
+        success: false,
+        error:
+          error.response?.data?.message || "Không thể lấy thông tin profile",
+      };
+    }
+  };
+
+  // Update profile (for readers)
+  const updateProfile = async (profileData) => {
+    try {
+      const response = await axios.put("/docgia/profile", profileData);
+      user.value = response.data.data;
+      localStorage.setItem("user", JSON.stringify(response.data.data));
+      return { success: true, user: response.data.data };
+    } catch (error) {
+      console.error("Update profile error:", error);
+      return {
+        success: false,
+        error: error.response?.data?.message || "Không thể cập nhật profile",
+      };
+    }
+  };
+
+  // Change password (for readers)
+  const changePassword = async (passwordData) => {
+    try {
+      await axios.put("/docgia/change-password", passwordData);
+      return { success: true };
+    } catch (error) {
+      console.error("Change password error:", error);
+      return {
+        success: false,
+        error: error.response?.data?.message || "Không thể đổi mật khẩu",
+      };
+    }
+  };
+
+  // Get user role
+  const getUserRole = () => {
+    return localStorage.getItem("userRole") || "reader";
+  };
+
   return {
     // State
     token: computed(() => token.value),
@@ -151,7 +272,14 @@ export function useAuth() {
 
     // Methods
     login,
+    loginReader,
+    loginStaff,
+    register,
     logout,
+    getProfile,
+    updateProfile,
+    changePassword,
+    getUserRole,
     isTokenExpired,
     refreshToken,
     initAuth,
@@ -161,21 +289,21 @@ export function useAuth() {
 // Helper function để decode JWT token (cho real tokens từ backend)
 function decodeJWTPayload(token) {
   try {
-    const parts = token.split('.');
+    const parts = token.split(".");
     if (parts.length !== 3) {
-      throw new Error('Invalid token format');
+      throw new Error("Invalid token format");
     }
-    
+
     // Decode payload part
     const payload = parts[1];
     // Add padding if needed
-    const paddedPayload = payload + '='.repeat((4 - payload.length % 4) % 4);
+    const paddedPayload = payload + "=".repeat((4 - (payload.length % 4)) % 4);
     // Replace URL-safe characters
-    const base64 = paddedPayload.replace(/-/g, '+').replace(/_/g, '/');
-    
+    const base64 = paddedPayload.replace(/-/g, "+").replace(/_/g, "/");
+
     return JSON.parse(atob(base64));
   } catch (error) {
-    throw new Error('Failed to decode token');
+    throw new Error("Failed to decode token");
   }
 }
 

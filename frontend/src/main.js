@@ -5,6 +5,9 @@ import { useAuth } from './composables/useAuth.js';
 import { globalErrorHandler } from './composables/useErrorHandler.js';
 import './assets/styles/main.css';
 
+// Import Bootstrap JavaScript
+import 'bootstrap/dist/js/bootstrap.bundle.min.js';
+
 const app = createApp(App);
 app.use(router);
 
