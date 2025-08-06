@@ -1,117 +1,293 @@
 <template>
   <div class="container-fluid">
-    <DataTable title="Quản lý sách" :data="sachList" :columns="columns" :loading="loading" :searchable="true"
-      search-placeholder="Tìm kiếm theo mã sách, tên sách, tác giả, nhà xuất bản..."
-      :actions="['view', 'edit', 'delete']" @search="handleSearch" @action="handleAction">
-      <template #actions>
-        <button class="btn btn-primary" @click="showAddModal">
-          <i class="bi bi-plus-circle me-2"></i>Thêm sách
-        </button>
-      </template>
+    <div class="row">
+      <div class="col-12">
+        <div class="card shadow">
+          <div class="card-header py-3">
+            <h5 class="card-title mb-0 text-primary font-weight-bold">
+              <i class="bi bi-book me-2"></i>Quản lý sách
+            </h5>
+          </div>
+          <div class="card-body">
+            <!-- Search and Add Section -->
+            <div class="row mb-4">
+              <div class="col-md-8">
+                <div class="input-group">
+                  <span class="input-group-text">
+                    <i class="bi bi-search"></i>
+                  </span>
+                  <input type="text" class="form-control"
+                    placeholder="Tìm kiếm theo mã sách, tên sách, tác giả, nhà xuất bản..." v-model="searchQuery"
+                    @input="handleSearch">
+                  <button class="btn btn-outline-secondary" @click="clearSearch" v-if="searchQuery">
+                    <i class="bi bi-x"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="col-md-4 text-end">
+                <button class="btn btn-primary" @click="showAddModal">
+                  <i class="bi bi-plus-circle me-2"></i>Thêm sách
+                </button>
+              </div>
+            </div>
 
-      <template #column-DonGia="{ value }">
-        <span class="text-success fw-bold">{{ formatCurrency(value) }}</span>
-      </template>
+            <!-- Table Section -->
+            <div class="table-responsive">
+              <table class="table table-hover">
+                <thead class="table-light">
+                  <tr>
+                    <th style="width: 100px;">Mã sách</th>
+                    <th>Tên sách</th>
+                    <th style="width: 120px;">Đơn giá mượn</th>
+                    <th style="width: 100px;">Tổng số</th>
+                    <th style="width: 100px;">Còn lại</th>
+                    <th style="width: 100px;">Năm XB</th>
+                    <th style="width: 150px;">Nhà XB</th>
+                    <th style="width: 150px;">Tác giả</th>
+                    <th style="width: 120px;" class="text-center">Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="sach in sachList" :key="sach.MaSach">
+                    <td>
+                      <span class="badge bg-primary">{{ sach.MaSach }}</span>
+                    </td>
+                    <td class="fw-bold">{{ sach.TenSach }}</td>
+                    <td class="text-end">
+                      <span class="text-success fw-bold">{{ formatCurrency(sach.DonGia) }}</span>
+                    </td>
+                    <td class="text-center">
+                      <span class="badge bg-info">{{ sach.SoQuyen }}</span>
+                    </td>
+                    <td class="text-center">
+                      <span :class="(sach.SoQuyenConLai || sach.SoQuyen) > 0 ? 'badge bg-success' : 'badge bg-danger'">
+                        {{ sach.SoQuyenConLai !== undefined ? sach.SoQuyenConLai : sach.SoQuyen }}
+                      </span>
+                    </td>
+                    <td class="text-center">{{ sach.NamXuatBan }}</td>
+                    <td class="text-truncate" style="max-width: 150px;" :title="sach.NhaXuatBan">
+                      {{ sach.NhaXuatBan }}
+                    </td>
+                    <td class="text-truncate" style="max-width: 150px;" :title="sach.NguonGoc">
+                      {{ sach.NguonGoc }}
+                    </td>
+                    <td class="text-center">
+                      <div class="btn-group" role="group">
+                        <button class="btn btn-sm btn-outline-primary" @click="editSach(sach)" title="Chỉnh sửa">
+                          <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" @click="confirmDelete(sach)" title="Xóa">
+                          <i class="bi bi-trash"></i>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr v-if="sachList.length === 0 && !loading">
+                    <td colspan="9" class="text-center text-muted py-4">
+                      <i class="bi bi-inbox display-4 d-block mb-2"></i>
+                      {{ searchQuery ? 'Không tìm thấy sách nào' : 'Chưa có sách nào' }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
 
-      <template #column-SoQuyen="{ value }">
-        <span :class="value > 0 ? 'text-success' : 'text-danger'">{{ value }}</span>
-      </template>
-    </DataTable>
+            <!-- Loading State -->
+            <div v-if="loading" class="text-center py-4">
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Đang tải...</span>
+              </div>
+              <p class="mt-2 text-muted">Đang tải danh sách sách...</p>
+            </div>
+
+            <!-- Pagination -->
+            <div class="row mt-4" v-if="totalItems > 0">
+              <div class="col-md-6">
+                <p class="text-muted">
+                  Hiển thị {{ startIndex + 1 }} - {{ endIndex }} trong tổng số {{
+                    totalItems }} sách
+                </p>
+              </div>
+              <div class="col-md-6">
+                <nav aria-label="Pagination">
+                  <ul class="pagination justify-content-end mb-0">
+                    <li class="page-item" :class="{ disabled: currentPage === 1 }">
+                      <button class="page-link" @click="goToPage(currentPage - 1)" :disabled="currentPage === 1">
+                        <i class="bi bi-chevron-left"></i>
+                      </button>
+                    </li>
+                    <li class="page-item" v-for="page in visiblePages" :key="page"
+                      :class="{ active: page === currentPage }">
+                      <button class="page-link" @click="goToPage(page)">{{ page }}</button>
+                    </li>
+                    <li class="page-item" :class="{ disabled: currentPage === totalPages }">
+                      <button class="page-link" @click="goToPage(currentPage + 1)"
+                        :disabled="currentPage === totalPages">
+                        <i class="bi bi-chevron-right"></i>
+                      </button>
+                    </li>
+                  </ul>
+                </nav>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- Add/Edit Modal -->
-    <Modal :show="showModal" :title="editingSach ? 'Chỉnh sửa sách' : 'Thêm sách mới'"
-      :icon="editingSach ? 'bi bi-pencil-square' : 'bi bi-book-half'" size="lg" :loading="saving"
-      loading-text="Đang lưu..." confirm-text="Lưu" cancel-text="Hủy" @close="closeModal" @confirm="saveSach"
-      @cancel="closeModal">
-      <form @submit.prevent="saveSach">
-        <div class="row">
-          <div class="col-md-6">
-            <div class="mb-3">
-              <label for="maSach" class="form-label">Mã sách <span class="text-danger">*</span></label>
-              <input type="text" class="form-control" id="maSach" v-model="formData.MaSach" :disabled="editingSach"
-                :class="{ 'is-invalid': errors.MaSach }" placeholder="VD: S001">
-              <div class="invalid-feedback" v-if="errors.MaSach">{{ errors.MaSach }}</div>
-            </div>
+    <div class="modal fade" :class="{ show: showModal }" :style="{ display: showModal ? 'block' : 'none' }"
+      tabindex="-1">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">
+              <i class="bi bi-book-half me-2" v-if="!editingSach"></i>
+              <i class="bi bi-pencil-square me-2" v-else></i>
+              {{ editingSach ? 'Chỉnh sửa sách' : 'Thêm sách mới' }}
+            </h5>
+            <button type="button" class="btn-close" @click="closeModal"></button>
           </div>
-          <div class="col-md-6">
-            <div class="mb-3">
-              <label for="namXuatBan" class="form-label">Năm xuất bản <span class="text-danger">*</span></label>
-              <input type="number" class="form-control" id="namXuatBan" v-model="formData.NamXuatBan"
-                :class="{ 'is-invalid': errors.NamXuatBan }" :min="1900" :max="currentYear" placeholder="VD: 2023">
-              <div class="invalid-feedback" v-if="errors.NamXuatBan">{{ errors.NamXuatBan }}</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="mb-3">
-          <label for="tenSach" class="form-label">Tên sách <span class="text-danger">*</span></label>
-          <input type="text" class="form-control" id="tenSach" v-model="formData.TenSach"
-            :class="{ 'is-invalid': errors.TenSach }" placeholder="VD: Lập trình JavaScript cơ bản">
-          <div class="invalid-feedback" v-if="errors.TenSach">{{ errors.TenSach }}</div>
-        </div>
-
-        <div class="row">
-          <div class="col-md-6">
-            <div class="mb-3">
-              <label for="donGia" class="form-label">Đơn giá <span class="text-danger">*</span></label>
-              <div class="input-group">
-                <input type="number" class="form-control" id="donGia" v-model="formData.DonGia"
-                  :class="{ 'is-invalid': errors.DonGia }" min="0" step="1000" placeholder="150000">
-                <span class="input-group-text">VNĐ</span>
+          <div class="modal-body">
+            <form @submit.prevent="saveSach">
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="maSach" class="form-label">Mã sách <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="maSach" v-model="formData.MaSach"
+                      :disabled="editingSach" :class="{ 'is-invalid': errors.MaSach }" placeholder="VD: S001">
+                    <div class="invalid-feedback" v-if="errors.MaSach">{{ errors.MaSach }}</div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="namXuatBan" class="form-label">Năm xuất bản <span class="text-danger">*</span></label>
+                    <input type="number" class="form-control" id="namXuatBan" v-model="formData.NamXuatBan"
+                      :class="{ 'is-invalid': errors.NamXuatBan }" :min="1900" :max="currentYear"
+                      placeholder="VD: 2023">
+                    <div class="invalid-feedback" v-if="errors.NamXuatBan">{{ errors.NamXuatBan }}</div>
+                  </div>
+                </div>
               </div>
-              <div class="invalid-feedback" v-if="errors.DonGia">{{ errors.DonGia }}</div>
-            </div>
-          </div>
-          <div class="col-md-6">
-            <div class="mb-3">
-              <label for="soQuyen" class="form-label">Số quyển <span class="text-danger">*</span></label>
-              <input type="number" class="form-control" id="soQuyen" v-model="formData.SoQuyen"
-                :class="{ 'is-invalid': errors.SoQuyen }" min="0" placeholder="10">
-              <div class="invalid-feedback" v-if="errors.SoQuyen">{{ errors.SoQuyen }}</div>
-            </div>
-          </div>
-        </div>
 
-        <div class="row">
-          <div class="col-md-6">
-            <div class="mb-3">
-              <label for="nhaXuatBan" class="form-label">Nhà xuất bản <span class="text-danger">*</span></label>
-              <select class="form-select" id="nhaXuatBan" v-model="formData.MaNhaXuatBan"
-                :class="{ 'is-invalid': errors.MaNhaXuatBan }">
-                <option value="">Chọn nhà xuất bản</option>
-                <option v-for="nxb in nhaXuatBanList" :key="nxb.MaNhaXuatBan" :value="nxb.MaNhaXuatBan">
-                  {{ nxb.TenNhaXuatBan }}
-                </option>
-              </select>
-              <div class="invalid-feedback" v-if="errors.MaNhaXuatBan">{{ errors.MaNhaXuatBan }}</div>
-            </div>
+              <div class="mb-3">
+                <label for="tenSach" class="form-label">Tên sách <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="tenSach" v-model="formData.TenSach"
+                  :class="{ 'is-invalid': errors.TenSach }" placeholder="VD: Lập trình JavaScript cơ bản">
+                <div class="invalid-feedback" v-if="errors.TenSach">{{ errors.TenSach }}</div>
+              </div>
+
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="donGia" class="form-label">Đơn giá mượn <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                      <input type="number" class="form-control" id="donGia" v-model="formData.DonGia"
+                        :class="{ 'is-invalid': errors.DonGia }" min="0" step="1000" placeholder="15000">
+                      <span class="input-group-text">VNĐ</span>
+                    </div>
+                    <small class="form-text text-muted">Giá mượn sách một lần</small>
+                    <div class="invalid-feedback" v-if="errors.DonGia">{{ errors.DonGia }}</div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="soQuyen" class="form-label">Tổng số quyển <span class="text-danger">*</span></label>
+                    <input type="number" class="form-control" id="soQuyen" v-model="formData.SoQuyen"
+                      :class="{ 'is-invalid': errors.SoQuyen }" min="0" placeholder="10" @input="updateSoQuyenConLai">
+                    <div class="invalid-feedback" v-if="errors.SoQuyen">{{ errors.SoQuyen }}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="row" v-if="editingSach">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="soQuyenConLai" class="form-label">Số quyển còn lại <span
+                        class="text-danger">*</span></label>
+                    <input type="number" class="form-control" id="soQuyenConLai" v-model="formData.SoQuyenConLai"
+                      :class="{ 'is-invalid': errors.SoQuyenConLai }" min="0" :max="formData.SoQuyen" placeholder="10">
+                    <small class="form-text text-muted">Số sách có thể mượn</small>
+                    <div class="invalid-feedback" v-if="errors.SoQuyenConLai">{{ errors.SoQuyenConLai }}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="nhaXuatBan" class="form-label">Nhà xuất bản <span class="text-danger">*</span></label>
+                    <select class="form-select" id="nhaXuatBan" v-model="formData.MaNhaXuatBan"
+                      :class="{ 'is-invalid': errors.MaNhaXuatBan }">
+                      <option value="">Chọn nhà xuất bản</option>
+                      <option v-for="nxb in nhaXuatBanList" :key="nxb.MaNhaXuatBan" :value="nxb.MaNhaXuatBan">
+                        {{ nxb.TenNhaXuatBan }}
+                      </option>
+                    </select>
+                    <div class="invalid-feedback" v-if="errors.MaNhaXuatBan">{{ errors.MaNhaXuatBan }}</div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="nguonGoc" class="form-label">Tác giả <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="nguonGoc" v-model="formData.NguonGoc"
+                      :class="{ 'is-invalid': errors.NguonGoc }" placeholder="VD: Nguyễn Văn A">
+                    <div class="invalid-feedback" v-if="errors.NguonGoc">{{ errors.NguonGoc }}</div>
+                  </div>
+                </div>
+              </div>
+            </form>
           </div>
-          <div class="col-md-6">
-            <div class="mb-3">
-              <label for="nguonGoc" class="form-label">Tác giả <span class="text-danger">*</span></label>
-              <input type="text" class="form-control" id="nguonGoc" v-model="formData.NguonGoc"
-                :class="{ 'is-invalid': errors.NguonGoc }" placeholder="VD: Nguyễn Văn A">
-              <div class="invalid-feedback" v-if="errors.NguonGoc">{{ errors.NguonGoc }}</div>
-            </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" @click="closeModal">
+              <i class="bi bi-x-circle me-2"></i>Hủy
+            </button>
+            <button type="button" class="btn btn-primary" @click="saveSach" :disabled="saving">
+              <span v-if="saving" class="spinner-border spinner-border-sm me-2"></span>
+              <i class="bi bi-check-circle me-2" v-else></i>
+              {{ editingSach ? 'Cập nhật' : 'Thêm mới' }}
+            </button>
           </div>
         </div>
-      </form>
-    </Modal>
+      </div>
+    </div>
 
     <!-- Delete Confirmation Modal -->
-    <Modal :show="showDeleteModal" title="Xác nhận xóa" icon="bi bi-exclamation-triangle" size="md" :loading="deleting"
-      loading-text="Đang xóa..." confirm-text="Xóa" confirm-type="danger" cancel-text="Hủy"
-      @close="showDeleteModal = false" @confirm="deleteSach" @cancel="showDeleteModal = false">
-      <p>Bạn có chắc chắn muốn xóa sách <strong>{{ deletingSach?.TenSach }}</strong>?</p>
-      <p class="text-muted small">Hành động này không thể hoàn tác.</p>
-    </Modal>
+    <div class="modal fade" :class="{ show: showDeleteModal }" :style="{ display: showDeleteModal ? 'block' : 'none' }"
+      tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title text-danger">
+              <i class="bi bi-exclamation-triangle me-2"></i>Xác nhận xóa
+            </h5>
+            <button type="button" class="btn-close" @click="showDeleteModal = false"></button>
+          </div>
+          <div class="modal-body">
+            <p>Bạn có chắc chắn muốn xóa sách <strong>{{ deletingSach?.TenSach }}</strong>?</p>
+            <p class="text-muted small">Hành động này không thể hoàn tác.</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" @click="showDeleteModal = false">
+              <i class="bi bi-x-circle me-2"></i>Hủy
+            </button>
+            <button type="button" class="btn btn-danger" @click="deleteSach" :disabled="deleting">
+              <span v-if="deleting" class="spinner-border spinner-border-sm me-2"></span>
+              <i class="bi bi-trash me-2" v-else></i>
+              Xóa
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Backdrop -->
+    <div class="modal-backdrop fade show" v-if="showModal || showDeleteModal"></div>
   </div>
 </template>
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import api from '../utils/axios.js'
-import DataTable from '../components/DataTable.vue'
-import Modal from '../components/Modal.vue'
 
 // Reactive data
 const sachList = ref([])
@@ -122,6 +298,8 @@ const deleting = ref(false)
 const searchQuery = ref('')
 const currentPage = ref(1)
 const itemsPerPage = ref(10)
+const totalItems = ref(0)
+const totalPages = ref(0)
 
 // Modal states
 const showModal = ref(false)
@@ -135,6 +313,7 @@ const formData = ref({
   TenSach: '',
   DonGia: '',
   SoQuyen: '',
+  SoQuyenConLai: '',
   NamXuatBan: '',
   MaNhaXuatBan: '',
   NguonGoc: ''
@@ -143,83 +322,10 @@ const formData = ref({
 // Form errors
 const errors = ref({})
 
-// Table columns
-const columns = ref([
-  {
-    key: 'MaSach',
-    title: 'Mã sách',
-    sortable: true,
-    width: '100px'
-  },
-  {
-    key: 'TenSach',
-    title: 'Tên sách',
-    sortable: true
-  },
-  {
-    key: 'DonGia',
-    title: 'Đơn giá',
-    type: 'currency',
-    sortable: true,
-    width: '120px',
-    align: 'right'
-  },
-  {
-    key: 'SoQuyen',
-    title: 'Số quyển',
-    sortable: true,
-    width: '100px',
-    align: 'center'
-  },
-  {
-    key: 'NamXuatBan',
-    title: 'Năm XB',
-    sortable: true,
-    width: '100px',
-    align: 'center'
-  },
-  {
-    key: 'NhaXuatBan',
-    title: 'Nhà XB',
-    sortable: true,
-    width: '150px'
-  },
-  {
-    key: 'NguonGoc',
-    title: 'Tác giả',
-    sortable: true,
-    width: '150px'
-  }
-])
-
 // Computed properties
-const filteredSach = computed(() => {
-  if (!Array.isArray(sachList.value)) return []
-  if (!searchQuery.value) return sachList.value
-
-  const query = searchQuery.value.toLowerCase().trim()
-  return sachList.value.filter(sach =>
-    sach.MaSach.toLowerCase().includes(query) ||
-    sach.TenSach.toLowerCase().includes(query) ||
-    sach.NguonGoc.toLowerCase().includes(query) ||
-    sach.NhaXuatBan.toLowerCase().includes(query)
-  )
-})
-
-const totalPages = computed(() => {
-  if (!Array.isArray(filteredSach.value)) return 0
-  return Math.ceil(filteredSach.value.length / itemsPerPage.value)
-})
-
 const startIndex = computed(() => (currentPage.value - 1) * itemsPerPage.value)
 const endIndex = computed(() => {
-  if (!Array.isArray(filteredSach.value)) return 0
-  return Math.min(startIndex.value + itemsPerPage.value, filteredSach.value.length)
-})
-
-const paginatedSach = computed(() => {
-  if (!Array.isArray(filteredSach.value)) return []
-  return filteredSach.value.slice(startIndex.value, endIndex.value)
+  return Math.min(startIndex.value + itemsPerPage.value, totalItems.value)
 })
 
 const visiblePages = computed(() => {
@@ -239,127 +345,55 @@ const currentYear = computed(() => new Date().getFullYear())
 const loadSach = async () => {
   loading.value = true
 
-  // Mock data fallback
-  const mockData = [
-    {
-      MaSach: 'S001',
-      TenSach: 'Lập trình JavaScript cơ bản',
-      DonGia: 150000,
-      SoQuyen: 10,
-      NamXuatBan: 2023,
-      MaNhaXuatBan: 'NXB001',
-      NhaXuatBan: 'NXB Giáo dục',
-      NguonGoc: 'Nguyễn Văn A'
-    },
-    {
-      MaSach: 'S002',
-      TenSach: 'Cơ sở dữ liệu nâng cao',
-      DonGia: 200000,
-      SoQuyen: 8,
-      NamXuatBan: 2023,
-      MaNhaXuatBan: 'NXB002',
-      NhaXuatBan: 'NXB Khoa học',
-      NguonGoc: 'Trần Thị B'
-    },
-    {
-      MaSach: 'S003',
-      TenSach: 'Mạng máy tính',
-      DonGia: 180000,
-      SoQuyen: 12,
-      NamXuatBan: 2022,
-      MaNhaXuatBan: 'NXB003',
-      NhaXuatBan: 'NXB Công nghệ',
-      NguonGoc: 'Lê Văn C'
-    },
-    {
-      MaSach: 'S004',
-      TenSach: 'Thuật toán và cấu trúc dữ liệu',
-      DonGia: 220000,
-      SoQuyen: 15,
-      NamXuatBan: 2023,
-      MaNhaXuatBan: 'NXB001',
-      NhaXuatBan: 'NXB Giáo dục',
-      NguonGoc: 'Phạm Văn D'
-    },
-    {
-      MaSach: 'S005',
-      TenSach: 'Hệ điều hành Linux',
-      DonGia: 190000,
-      SoQuyen: 6,
-      NamXuatBan: 2022,
-      MaNhaXuatBan: 'NXB003',
-      NhaXuatBan: 'NXB Công nghệ',
-      NguonGoc: 'Hoàng Thị E'
-    }
-  ]
-
   try {
-    // Try to get data from API
-    const response = await api.get('/sach')
-    const apiData = response.data.data?.sach || response.data.data || []
+    const params = {
+      page: currentPage.value,
+      limit: itemsPerPage.value,
+      search: searchQuery.value
+    }
 
-    // Use API data if available and valid, otherwise use mock data
-    if (Array.isArray(apiData) && apiData.length > 0) {
-      sachList.value = apiData
+    const response = await api.get('/sach', { params })
+    console.log('API Response:', response.data)
+    
+    if (response.data.success) {
+      sachList.value = response.data.data || []
+      totalItems.value = response.data.pagination?.totalItems || 0
+      totalPages.value = response.data.pagination?.totalPages || 0
+      console.log('Loaded sach:', sachList.value)
+      console.log('Pagination:', response.data.pagination)
     } else {
-      console.log('API returned empty or invalid data, using mock data')
-      sachList.value = mockData
+      sachList.value = []
+      totalItems.value = 0
+      totalPages.value = 0
     }
   } catch (error) {
     console.error('Error loading sach from API:', error)
-    console.log('Using mock data as fallback')
-    sachList.value = mockData
+    sachList.value = []
+    totalItems.value = 0
+    totalPages.value = 0
   } finally {
     loading.value = false
-    // Final safety check
-    if (!Array.isArray(sachList.value) || sachList.value.length === 0) {
-      sachList.value = mockData
-    }
   }
 }
 
 const loadNhaXuatBan = async () => {
-  // Mock data for publishers
-  const mockNXB = [
-    { MaNhaXuatBan: 'NXB001', TenNhaXuatBan: 'NXB Giáo dục' },
-    { MaNhaXuatBan: 'NXB002', TenNhaXuatBan: 'NXB Khoa học' },
-    { MaNhaXuatBan: 'NXB003', TenNhaXuatBan: 'NXB Công nghệ' },
-    { MaNhaXuatBan: 'NXB004', TenNhaXuatBan: 'NXB Văn học' },
-    { MaNhaXuatBan: 'NXB005', TenNhaXuatBan: 'NXB Đại học Quốc gia' }
-  ]
-
   try {
     const response = await api.get('/nhaxuatban')
-    const apiData = response.data.data?.nhaxuatban || response.data.data || []
-
-    if (Array.isArray(apiData) && apiData.length > 0) {
-      nhaXuatBanList.value = apiData
+    if (response.data.success) {
+      const apiData = response.data.data?.nhaxuatban || response.data.data || []
+      nhaXuatBanList.value = Array.isArray(apiData) ? apiData : []
     } else {
-      nhaXuatBanList.value = mockNXB
+      nhaXuatBanList.value = []
     }
   } catch (error) {
     console.error('Error loading nha xuat ban:', error)
-    nhaXuatBanList.value = mockNXB
+    nhaXuatBanList.value = []
   }
 }
 
-const handleSearch = (query) => {
-  searchQuery.value = query
+const handleSearch = () => {
   currentPage.value = 1
-}
-
-const handleAction = ({ action, item }) => {
-  switch (action) {
-    case 'view':
-      viewSach(item)
-      break
-    case 'edit':
-      editSach(item)
-      break
-    case 'delete':
-      confirmDelete(item)
-      break
-  }
+  loadSach()
 }
 
 const formatCurrency = (value) => {
@@ -373,11 +407,13 @@ const formatCurrency = (value) => {
 const clearSearch = () => {
   searchQuery.value = ''
   currentPage.value = 1
+  loadSach()
 }
 
 const goToPage = (page) => {
   if (page >= 1 && page <= totalPages.value) {
     currentPage.value = page
+    loadSach()
   }
 }
 
@@ -389,7 +425,12 @@ const showAddModal = () => {
 
 const editSach = (sach) => {
   editingSach.value = sach
-  formData.value = { ...sach }
+  formData.value = { 
+    ...sach,
+    SoQuyenConLai: (sach.SoQuyenConLai !== undefined && sach.SoQuyenConLai !== null && sach.SoQuyenConLai !== '') 
+      ? sach.SoQuyenConLai 
+      : sach.SoQuyen
+  }
   errors.value = {}
   showModal.value = true
 }
@@ -400,11 +441,18 @@ const resetForm = () => {
     TenSach: '',
     DonGia: '',
     SoQuyen: '',
+    SoQuyenConLai: '',
     NamXuatBan: '',
     MaNhaXuatBan: '',
     NguonGoc: ''
   }
   errors.value = {}
+}
+
+const updateSoQuyenConLai = () => {
+  if (!editingSach.value && formData.value.SoQuyen) {
+    formData.value.SoQuyenConLai = formData.value.SoQuyen
+  }
 }
 
 const closeModal = () => {
@@ -420,8 +468,6 @@ const validateForm = () => {
     errors.value.MaSach = 'Mã sách là bắt buộc'
   } else if (!/^S\d{3,}$/.test(formData.value.MaSach)) {
     errors.value.MaSach = 'Mã sách phải có định dạng S001, S002, ...'
-  } else if (!editingSach.value && Array.isArray(sachList.value) && sachList.value.some(s => s.MaSach === formData.value.MaSach)) {
-    errors.value.MaSach = 'Mã sách đã tồn tại'
   }
 
   if (!formData.value.TenSach.trim()) {
@@ -440,6 +486,15 @@ const validateForm = () => {
     errors.value.SoQuyen = 'Số quyển phải lớn hơn hoặc bằng 0'
   } else if (formData.value.SoQuyen > 1000) {
     errors.value.SoQuyen = 'Số quyển không được quá 1000'
+  }
+
+  if (editingSach.value) {
+    const soQuyenConLai = Number(formData.value.SoQuyenConLai)
+    if (isNaN(soQuyenConLai) || soQuyenConLai < 0) {
+      errors.value.SoQuyenConLai = 'Số quyển còn lại phải lớn hơn hoặc bằng 0'
+    } else if (soQuyenConLai > Number(formData.value.SoQuyen)) {
+      errors.value.SoQuyenConLai = 'Số quyển còn lại không được lớn hơn tổng số quyển'
+    }
   }
 
   if (!formData.value.NamXuatBan) {
@@ -470,27 +525,33 @@ const saveSach = async () => {
     const nxb = nhaXuatBanList.value.find(n => n.MaNhaXuatBan === formData.value.MaNhaXuatBan)
     const sachData = {
       ...formData.value,
-      NhaXuatBan: nxb?.TenNhaXuatBan || ''
+      NhaXuatBan: nxb?.TenNhaXuatBan || '',
+      // Ensure numeric fields are numbers
+      DonGia: Number(formData.value.DonGia),
+      SoQuyen: Number(formData.value.SoQuyen),
+      NamXuatBan: Number(formData.value.NamXuatBan)
     }
 
+    // For new books, set SoQuyenConLai = SoQuyen
+    if (!editingSach.value) {
+      sachData.SoQuyenConLai = sachData.SoQuyen
+    } else {
+      // For existing books, ensure SoQuyenConLai is a number
+      sachData.SoQuyenConLai = Number(formData.value.SoQuyenConLai)
+    }
+
+    console.log('Sending data:', sachData)
+    
     if (editingSach.value) {
       // Update existing
       await api.put(`/sach/${editingSach.value.MaSach}`, sachData)
-      if (Array.isArray(sachList.value)) {
-        const index = sachList.value.findIndex(s => s.MaSach === editingSach.value.MaSach)
-        if (index !== -1) {
-          sachList.value[index] = { ...sachData }
-        }
-      }
     } else {
       // Create new
       await api.post('/sach', sachData)
-      if (Array.isArray(sachList.value)) {
-        sachList.value.push({ ...sachData })
-      }
     }
 
     closeModal()
+    loadSach()
     console.log('Sách đã được lưu thành công')
   } catch (error) {
     console.error('Error saving sach:', error)
@@ -503,10 +564,7 @@ const saveSach = async () => {
   }
 }
 
-const viewSach = (sach) => {
-  // For now, just edit the book. Later can implement a view-only modal
-  editSach(sach)
-}
+
 
 const confirmDelete = (sach) => {
   deletingSach.value = sach
@@ -519,20 +577,12 @@ const deleteSach = async () => {
   deleting.value = true
   try {
     await api.delete(`/sach/${deletingSach.value.MaSach}`)
-    if (Array.isArray(sachList.value)) {
-      const index = sachList.value.findIndex(s => s.MaSach === deletingSach.value.MaSach)
-      if (index !== -1) {
-        sachList.value.splice(index, 1)
-      }
-    }
 
     showDeleteModal.value = false
     deletingSach.value = null
 
-    // Adjust current page if needed
-    if (paginatedSach.value.length === 0 && currentPage.value > 1) {
-      currentPage.value--
-    }
+    // Reload data after deletion
+    loadSach()
 
     console.log('Sách đã được xóa thành công')
   } catch (error) {
@@ -544,9 +594,14 @@ const deleteSach = async () => {
 
 
 
-// Watch for search query changes
+// Watch for search query changes with debounce
+let searchTimeout
 watch(searchQuery, () => {
-  currentPage.value = 1
+  clearTimeout(searchTimeout)
+  searchTimeout = setTimeout(() => {
+    currentPage.value = 1
+    loadSach()
+  }, 500)
 })
 
 // Lifecycle

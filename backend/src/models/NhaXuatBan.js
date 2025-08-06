@@ -19,11 +19,6 @@ const nhaXuatBanSchema = new mongoose.Schema({
     required: [true, 'Địa chỉ là bắt buộc'],
     trim: true,
     maxLength: [200, 'Địa chỉ không được quá 200 ký tự']
-  },
-  DienThoai: {
-    type: String,
-    trim: true,
-    match: [/^(0|\+84)[0-9]{9,10}$/, 'Số điện thoại không hợp lệ']
   }
 }, {
   timestamps: true,

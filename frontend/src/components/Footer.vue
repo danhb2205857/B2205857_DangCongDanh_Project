@@ -4,8 +4,7 @@
             <div class="row align-items-center">
                 <div class="col-md-6">
                     <p class="mb-0 text-muted">
-                        © {{ currentYear }} Hệ thống quản lý thư viện.
-                        <span class="d-none d-sm-inline">Phát triển bởi Đặng Công Danh.</span>
+
                     </p>
                 </div>
                 <div class="col-md-6 text-md-end">

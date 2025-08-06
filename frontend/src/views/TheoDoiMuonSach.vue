@@ -403,52 +403,6 @@ const tomorrow = computed(() => {
 const loadRecords = async () => {
   loading.value = true
 
-  // Mock data fallback
-  const mockData = [
-    {
-      MaTheoDoiMuonSach: 'TD001',
-      MaDocGia: 'DG001',
-      MaSach: 'S001',
-      NgayMuon: '2024-01-15',
-      NgayHenTra: '2024-01-29',
-      NgayTra: '2024-01-28',
-      TrangThai: 'Đã trả',
-      GhiChu: '',
-      NhanVienMuon: 'NV001',
-      NhanVienTra: 'NV001',
-      MaDocGia: { HoLot: 'Nguyễn Văn', Ten: 'An', DienThoai: '0901234567' },
-      MaSach: { TenSach: 'Lập trình JavaScript', NguonGoc: 'Nguyễn Văn A', SoQuyen: 10 }
-    },
-    {
-      MaTheoDoiMuonSach: 'TD002',
-      MaDocGia: 'DG002',
-      MaSach: 'S002',
-      NgayMuon: '2024-01-20',
-      NgayHenTra: '2024-02-03',
-      NgayTra: null,
-      TrangThai: 'Đang mượn',
-      GhiChu: '',
-      NhanVienMuon: 'NV001',
-      NhanVienTra: null,
-      MaDocGia: { HoLot: 'Trần Thị', Ten: 'Bình', DienThoai: '0987654321' },
-      MaSach: { TenSach: 'Cơ sở dữ liệu', NguonGoc: 'Trần Thị B', SoQuyen: 8 }
-    },
-    {
-      MaTheoDoiMuonSach: 'TD003',
-      MaDocGia: 'DG003',
-      MaSach: 'S003',
-      NgayMuon: '2024-01-10',
-      NgayHenTra: '2024-01-24',
-      NgayTra: null,
-      TrangThai: 'Quá hạn',
-      GhiChu: '',
-      NhanVienMuon: 'NV001',
-      NhanVienTra: null,
-      MaDocGia: { HoLot: 'Lê Văn', Ten: 'Cường', DienThoai: '0912345678' },
-      MaSach: { TenSach: 'Mạng máy tính', NguonGoc: 'Lê Văn C', SoQuyen: 12 }
-    }
-  ]
-
   try {
     const response = await api.get('/theodoimuonsach')
     const apiData = response.data.data?.theodoimuonsach || response.data.data || []
@@ -457,16 +411,16 @@ const loadRecords = async () => {
       recordsList.value = apiData
     } else {
       console.log('API returned empty or invalid data, using mock data')
-      recordsList.value = mockData
+
     }
   } catch (error) {
     console.error('Error loading records from API:', error)
     console.log('Using mock data as fallback')
-    recordsList.value = mockData
+
   } finally {
     loading.value = false
     if (!Array.isArray(recordsList.value) || recordsList.value.length === 0) {
-      recordsList.value = mockData
+
     }
   }
 }

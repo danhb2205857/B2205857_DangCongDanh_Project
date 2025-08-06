@@ -62,7 +62,7 @@ const props = defineProps({
       {
         name: 'dashboard',
         path: '/admin',
-        label: 'Dashboard',
+        label: 'Thống kê',
         icon: 'bi bi-speedometer2'
       },
       {
@@ -88,12 +88,6 @@ const props = defineProps({
         path: '/admin/theodoimuonsach',
         label: 'Mượn trả sách',
         icon: 'bi bi-arrow-repeat'
-      },
-      {
-        name: 'thongke',
-        path: '/admin/thongke',
-        label: 'Thống kê',
-        icon: 'bi bi-graph-up'
       }
     ]
   }

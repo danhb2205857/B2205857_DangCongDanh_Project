@@ -47,7 +47,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr v-for="docgia in paginatedDocGia" :key="docgia.MaDocGia">
+                                    <tr v-for="docgia in docgiaList" :key="docgia.MaDocGia">
                                         <td>
                                             <span class="badge bg-primary">{{ docgia.MaDocGia }}</span>
                                         </td>
@@ -77,7 +77,7 @@
                                             </div>
                                         </td>
                                     </tr>
-                                    <tr v-if="filteredDocGia.length === 0 && !loading">
+                                    <tr v-if="docgiaList.length === 0 && !loading">
                                         <td colspan="8" class="text-center text-muted py-4">
                                             <i class="bi bi-inbox display-4 d-block mb-2"></i>
                                             {{ searchQuery ? 'Không tìm thấy độc giả nào' : 'Chưa có độc giả nào' }}
@@ -96,11 +96,11 @@
                         </div>
 
                         <!-- Pagination -->
-                        <div class="row mt-4" v-if="filteredDocGia.length > 0">
+                        <div class="row mt-4" v-if="totalItems > 0">
                             <div class="col-md-6">
                                 <p class="text-muted">
                                     Hiển thị {{ startIndex + 1 }} - {{ endIndex }} trong tổng số {{
-                                        filteredDocGia.length }} độc giả
+                                        totalItems }} độc giả
                                 </p>
                             </div>
                             <div class="col-md-6">
@@ -277,7 +277,7 @@
 </template>
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import axios from 'axios'
+import api from '../utils/axios.js'
 
 // Reactive data
 const docgiaList = ref([])
@@ -287,6 +287,8 @@ const deleting = ref(false)
 const searchQuery = ref('')
 const currentPage = ref(1)
 const itemsPerPage = ref(10)
+const totalItems = ref(0)
+const totalPages = ref(0)
 
 // Modal states
 const showModal = ref(false)
@@ -309,34 +311,9 @@ const formData = ref({
 const errors = ref({})
 
 // Computed properties
-const filteredDocGia = computed(() => {
-    if (!Array.isArray(docgiaList.value)) return []
-    if (!searchQuery.value) return docgiaList.value
-
-    const query = searchQuery.value.toLowerCase().trim()
-    return docgiaList.value.filter(docgia =>
-        docgia.MaDocGia.toLowerCase().includes(query) ||
-        docgia.HoLot.toLowerCase().includes(query) ||
-        docgia.Ten.toLowerCase().includes(query) ||
-        docgia.DiaChi.toLowerCase().includes(query) ||
-        docgia.DienThoai.includes(query)
-    )
-})
-
-const totalPages = computed(() => {
-    if (!Array.isArray(filteredDocGia.value)) return 0
-    return Math.ceil(filteredDocGia.value.length / itemsPerPage.value)
-})
-
 const startIndex = computed(() => (currentPage.value - 1) * itemsPerPage.value)
 const endIndex = computed(() => {
-    if (!Array.isArray(filteredDocGia.value)) return 0
-    return Math.min(startIndex.value + itemsPerPage.value, filteredDocGia.value.length)
-})
-
-const paginatedDocGia = computed(() => {
-    if (!Array.isArray(filteredDocGia.value)) return []
-    return filteredDocGia.value.slice(startIndex.value, endIndex.value)
+    return Math.min(startIndex.value + itemsPerPage.value, totalItems.value)
 })
 
 const visiblePages = computed(() => {
@@ -360,92 +337,50 @@ const maxDate = computed(() => {
 const loadDocGia = async () => {
     loading.value = true
 
-    // Mock data fallback
-    const mockData = [
-        {
-            MaDocGia: 'DG001',
-            HoLot: 'Nguyễn Văn',
-            Ten: 'An',
-            NgaySinh: '1990-01-15',
-            Phai: 'Nam',
-            DiaChi: '123 Đường Lê Lợi, Phường Bến Nghé, Quận 1, TP.HCM',
-            DienThoai: '0901234567'
-        },
-        {
-            MaDocGia: 'DG002',
-            HoLot: 'Trần Thị',
-            Ten: 'Bình',
-            NgaySinh: '1992-05-20',
-            Phai: 'Nữ',
-            DiaChi: '456 Đường Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP.HCM',
-            DienThoai: '0987654321'
-        },
-        {
-            MaDocGia: 'DG003',
-            HoLot: 'Lê Văn',
-            Ten: 'Cường',
-            NgaySinh: '1988-12-10',
-            Phai: 'Nam',
-            DiaChi: '789 Đường Đồng Khởi, Phường Bến Nghé, Quận 1, TP.HCM',
-            DienThoai: '0912345678'
-        },
-        {
-            MaDocGia: 'DG004',
-            HoLot: 'Phạm Thị',
-            Ten: 'Dung',
-            NgaySinh: '1995-03-25',
-            Phai: 'Nữ',
-            DiaChi: '321 Đường Pasteur, Phường Võ Thị Sáu, Quận 3, TP.HCM',
-            DienThoai: '0923456789'
-        },
-        {
-            MaDocGia: 'DG005',
-            HoLot: 'Hoàng Văn',
-            Ten: 'Em',
-            NgaySinh: '1993-07-18',
-            Phai: 'Nam',
-            DiaChi: '654 Đường Cách Mạng Tháng 8, Phường 5, Quận 3, TP.HCM',
-            DienThoai: '0934567890'
-        }
-    ]
-
     try {
-        // Try to get data from API
-        const response = await axios.get('/api/docgia')
-        const apiData = response.data.docgia || response.data.data || []
-
-        // Use API data if available and valid, otherwise use mock data
-        if (Array.isArray(apiData) && apiData.length > 0) {
-            docgiaList.value = apiData
+        const params = {
+            page: currentPage.value,
+            limit: itemsPerPage.value,
+            search: searchQuery.value
+        }
+        
+        const response = await api.get('/docgia', { params })
+        const data = response.data.data
+        
+        if (data) {
+            docgiaList.value = data.docgia || []
+            totalItems.value = data.pagination?.totalItems || 0
+            totalPages.value = data.pagination?.totalPages || 0
         } else {
-            console.log('API returned empty or invalid data, using mock data')
-            docgiaList.value = mockData
+            docgiaList.value = []
+            totalItems.value = 0
+            totalPages.value = 0
         }
     } catch (error) {
         console.error('Error loading doc gia from API:', error)
-        console.log('Using mock data as fallback')
-        docgiaList.value = mockData
+        docgiaList.value = []
+        totalItems.value = 0
+        totalPages.value = 0
     } finally {
         loading.value = false
-        // Final safety check
-        if (!Array.isArray(docgiaList.value) || docgiaList.value.length === 0) {
-            docgiaList.value = mockData
-        }
     }
 }
 
 const handleSearch = () => {
     currentPage.value = 1
+    loadDocGia()
 }
 
 const clearSearch = () => {
     searchQuery.value = ''
     currentPage.value = 1
+    loadDocGia()
 }
 
 const goToPage = (page) => {
     if (page >= 1 && page <= totalPages.value) {
         currentPage.value = page
+        loadDocGia()
     }
 }
 
@@ -488,8 +423,7 @@ const validateForm = () => {
         errors.value.MaDocGia = 'Mã độc giả là bắt buộc'
     } else if (!/^DG\d{3,}$/.test(formData.value.MaDocGia)) {
         errors.value.MaDocGia = 'Mã độc giả phải có định dạng DG001, DG002, ...'
-    } else if (!editingDocGia.value && Array.isArray(docgiaList.value) && docgiaList.value.some(dg => dg.MaDocGia === formData.value.MaDocGia)) {
-        errors.value.MaDocGia = 'Mã độc giả đã tồn tại'
+    // Note: Duplicate check will be handled by backend
     }
 
     if (!formData.value.HoLot.trim()) {
@@ -529,10 +463,7 @@ const validateForm = () => {
         errors.value.DienThoai = 'Điện thoại là bắt buộc'
     } else if (!/^(0|\+84)[0-9]{9,10}$/.test(formData.value.DienThoai)) {
         errors.value.DienThoai = 'Số điện thoại không hợp lệ'
-    } else if (!editingDocGia.value && Array.isArray(docgiaList.value) && docgiaList.value.some(dg => dg.DienThoai === formData.value.DienThoai)) {
-        errors.value.DienThoai = 'Số điện thoại đã được sử dụng'
-    } else if (editingDocGia.value && Array.isArray(docgiaList.value) && docgiaList.value.some(dg => dg.DienThoai === formData.value.DienThoai && dg.MaDocGia !== editingDocGia.value.MaDocGia)) {
-        errors.value.DienThoai = 'Số điện thoại đã được sử dụng'
+    // Note: Duplicate phone check will be handled by backend
     }
 
     return Object.keys(errors.value).length === 0
@@ -545,23 +476,15 @@ const saveDocGia = async () => {
     try {
         if (editingDocGia.value) {
             // Update existing
-            await axios.put(`/api/docgia/${editingDocGia.value.MaDocGia}`, formData.value)
-            if (Array.isArray(docgiaList.value)) {
-                const index = docgiaList.value.findIndex(dg => dg.MaDocGia === editingDocGia.value.MaDocGia)
-                if (index !== -1) {
-                    docgiaList.value[index] = { ...formData.value }
-                }
-            }
+            await api.put(`/docgia/${editingDocGia.value.MaDocGia}`, formData.value)
         } else {
             // Create new
-            await axios.post('/api/docgia', formData.value)
-            if (Array.isArray(docgiaList.value)) {
-                docgiaList.value.push({ ...formData.value })
-            }
+            await api.post('/docgia', formData.value)
         }
 
         closeModal()
-        // Show success message (you can implement toast notifications)
+        // Reload data after save
+        loadDocGia()
         console.log('Độc giả đã được lưu thành công')
     } catch (error) {
         console.error('Error saving doc gia:', error)
@@ -584,21 +507,13 @@ const deleteDocGia = async () => {
 
     deleting.value = true
     try {
-        await axios.delete(`/api/docgia/${deletingDocGia.value.MaDocGia}`)
-        if (Array.isArray(docgiaList.value)) {
-            const index = docgiaList.value.findIndex(dg => dg.MaDocGia === deletingDocGia.value.MaDocGia)
-            if (index !== -1) {
-                docgiaList.value.splice(index, 1)
-            }
-        }
+        await api.delete(`/docgia/${deletingDocGia.value.MaDocGia}`)
 
         showDeleteModal.value = false
         deletingDocGia.value = null
 
-        // Adjust current page if needed
-        if (paginatedDocGia.value.length === 0 && currentPage.value > 1) {
-            currentPage.value--
-        }
+        // Reload data after deletion
+        loadDocGia()
 
         console.log('Độc giả đã được xóa thành công')
     } catch (error) {
@@ -613,9 +528,14 @@ const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('vi-VN')
 }
 
-// Watch for search query changes
+// Watch for search query changes with debounce
+let searchTimeout
 watch(searchQuery, () => {
-    currentPage.value = 1
+    clearTimeout(searchTimeout)
+    searchTimeout = setTimeout(() => {
+        currentPage.value = 1
+        loadDocGia()
+    }, 500)
 })
 
 // Lifecycle

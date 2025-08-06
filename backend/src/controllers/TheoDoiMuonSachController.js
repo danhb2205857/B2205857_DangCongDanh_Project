@@ -1,39 +1,63 @@
-import TheoDoiMuonSach from '../models/TheoDoiMuonSach.js';
-import DocGia from '../models/DocGia.js';
-import Sach from '../models/Sach.js';
-import { AppError } from '../middlewares/errorHandler.js';
+import TheoDoiMuonSach from "../models/TheoDoiMuonSach.js";
+import DocGia from "../models/DocGia.js";
+import Sach from "../models/Sach.js";
+import { AppError } from "../middlewares/errorHandler.js";
 
 /**
  * TheoDoiMuonSach Controller - Quản lý mượn trả sách
  */
 
-// Helper function to build search query
+// Helper function to build search query with improved error handling
 function buildSearchQuery(search) {
-  if (!search) return {};
-  
-  const searchRegex = new RegExp(search.trim(), 'i');
-  return {
+  console.log("Building TheoDoiMuonSach search query for:", search);
+
+  // Return empty query if no search term
+  if (!search || typeof search !== "string" || search.trim().length === 0) {
+    console.log("No valid search term, returning empty query");
+    return {};
+  }
+
+  // Clean and validate search term
+  const searchTerm = search.trim();
+
+  // Escape special regex characters to prevent regex injection
+  const escapedSearchTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+  // Create case-insensitive regex
+  const searchRegex = new RegExp(escapedSearchTerm, "i");
+
+  const query = {
     $or: [
       { MaTheoDoiMuonSach: searchRegex },
       { MaDocGia: searchRegex },
-      { MaSach: searchRegex }
-    ]
+      { MaSach: searchRegex },
+    ],
   };
+
+  console.log("TheoDoiMuonSach search query created successfully");
+  return query;
 }
 
 // Helper function to generate next MaTheoDoiMuonSach
 async function generateNextId() {
+  console.log("Generating next MaTheoDoiMuonSach...");
+
   const lastRecord = await TheoDoiMuonSach.findOne()
     .sort({ MaTheoDoiMuonSach: -1 })
-    .select('MaTheoDoiMuonSach');
-  
+    .select("MaTheoDoiMuonSach")
+    .lean();
+
   if (!lastRecord) {
-    return 'TD001';
+    console.log("No previous record found, returning TD001");
+    return "TD001";
   }
-  
+
   const lastNumber = parseInt(lastRecord.MaTheoDoiMuonSach.substring(2));
   const nextNumber = lastNumber + 1;
-  return `TD${nextNumber.toString().padStart(3, '0')}`;
+  const nextId = `TD${nextNumber.toString().padStart(3, "0")}`;
+
+  console.log("Generated next ID:", nextId);
+  return nextId;
 }
 
 export default {
@@ -41,75 +65,163 @@ export default {
    * GET /api/theodoimuonsach - Lấy danh sách theo dõi mượn sách
    */
   async getAll(req, res) {
+    console.log("=== Starting TheoDoiMuonSach getAll function ===");
+
+    // Parse and validate query parameters
     const page = Math.max(1, parseInt(req.query.page) || 1);
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 10));
-    const search = req.query.search || '';
-    const status = req.query.status || '';
-    const sortBy = req.query.sortBy || 'NgayMuon';
-    const sortOrder = req.query.sortOrder === 'asc' ? 1 : -1;
-    
+    const search = req.query.search || "";
+    const status = req.query.status || "";
+    const sortBy = req.query.sortBy || "NgayMuon";
+    const sortOrder = req.query.sortOrder === "desc" ? -1 : 1;
+
+    console.log("Query params:", {
+      page,
+      limit,
+      search,
+      status,
+      sortBy,
+      sortOrder,
+    });
+
     // Build search query
-    let searchQuery = buildSearchQuery(search);
-    
-    // Add status filter
+    const searchQuery = buildSearchQuery(search);
     if (status) {
       searchQuery.TrangThai = status;
     }
-    
-    // Get total count
+    console.log("Search query built:", JSON.stringify(searchQuery));
+
+    // Get total count for pagination
+    console.log("Getting total count...");
     const total = await TheoDoiMuonSach.countDocuments(searchQuery);
-    
-    // Get data with pagination and populate references
-    const data = await TheoDoiMuonSach.find(searchQuery)
-      .populate('MaDocGia', 'HoLot Ten DienThoai')
-      .populate('MaSach', 'TenSach NguonGoc SoQuyen')
-      .populate('NhanVienMuon', 'HoTenNV')
-      .populate('NhanVienTra', 'HoTenNV')
-      .skip((page - 1) * limit)
-      .limit(limit)
-      .sort({ [sortBy]: sortOrder })
-      .lean();
-    
-    // Calculate pagination info
+    console.log("Total TheoDoiMuonSach documents found:", total);
+
+    // Build the main query step by step
+    console.log("Building main query...");
+    const skip = (page - 1) * limit;
+
+    // Create query without chaining to avoid issues
+    let query = TheoDoiMuonSach.find(searchQuery);
+
+    // Apply population
+    query = query.populate({
+      path: "MaDocGia",
+      select: "HoLot Ten DienThoai",
+      model: "DocGia",
+      localField: "MaDocGia",
+      foreignField: "MaDocGia",
+      justOne: true,
+    });
+    query = query.populate({
+      path: "MaSach",
+      select: "TenSach NguonGoc SoQuyen",
+      model: "Sach",
+      localField: "MaSach",
+      foreignField: "MaSach",
+      justOne: true,
+    });
+    query = query.populate({
+      path: "NhanVienMuon",
+      select: "HoTenNV",
+      model: "NhanVien",
+      localField: "NhanVienMuon",
+      foreignField: "MaNhanVien",
+      justOne: true,
+    });
+    query = query.populate({
+      path: "NhanVienTra",
+      select: "HoTenNV",
+      model: "NhanVien",
+      localField: "NhanVienTra",
+      foreignField: "MaNhanVien",
+      justOne: true,
+    });
+
+    // Apply pagination
+    query = query.skip(skip);
+    query = query.limit(limit);
+
+    // Apply sorting - validate sortBy field first
+    const validSortFields = [
+      "MaTheoDoiMuonSach",
+      "MaDocGia",
+      "MaSach",
+      "NgayMuon",
+      "NgayHenTra",
+      "TrangThai",
+    ];
+    const finalSortBy = validSortFields.includes(sortBy) ? sortBy : "NgayMuon";
+    query = query.sort({ [finalSortBy]: sortOrder });
+
+    console.log("Query configured with:", {
+      skip,
+      limit,
+      sort: { [finalSortBy]: sortOrder },
+    });
+
+    // Execute query
+    console.log("Executing TheoDoiMuonSach query...");
+    const data = await query.lean();
+    console.log(
+      "Query executed successfully, got",
+      data.length,
+      "TheoDoiMuonSach items"
+    );
+
+    // Build pagination response
     const totalPages = Math.ceil(total / limit);
-    const hasNextPage = page < totalPages;
-    const hasPrevPage = page > 1;
-    
+    const paginationInfo = {
+      currentPage: page,
+      totalPages,
+      totalItems: total,
+      itemsPerPage: limit,
+      hasNextPage: page < totalPages,
+      hasPrevPage: page > 1,
+    };
+
+    console.log("Pagination info:", paginationInfo);
+
+    // Send response
     res.json({
       success: true,
-      message: 'Lấy danh sách theo dõi mượn sách thành công',
+      message: "Lấy danh sách theo dõi mượn sách thành công",
       data: {
         theodoimuonsach: data,
-        pagination: {
-          total,
-          totalPages,
-          currentPage: page,
-          limit,
-          hasNextPage,
-          hasPrevPage
-        }
-      }
+        pagination: paginationInfo,
+      },
     });
+
+    console.log(
+      "=== TheoDoiMuonSach getAll function completed successfully ==="
+    );
   },
 
   /**
    * GET /api/theodoimuonsach/:id - Lấy thông tin chi tiết
    */
   async getById(req, res) {
-    const theoDoiMuonSach = await TheoDoiMuonSach.findOne({ MaTheoDoiMuonSach: req.params.id })
-      .populate('MaDocGia')
-      .populate('MaSach')
-      .populate('NhanVienMuon', 'HoTenNV')
-      .populate('NhanVienTra', 'HoTenNV');
-    
+    console.log("Getting TheoDoiMuonSach by ID:", req.params.id);
+
+    let query = TheoDoiMuonSach.findOne({ MaTheoDoiMuonSach: req.params.id });
+    query = query.populate("MaDocGia", "HoLot Ten DienThoai");
+    query = query.populate("MaSach", "TenSach NguonGoc SoQuyen");
+    query = query.populate("NhanVienMuon", "HoTenNV");
+    query = query.populate("NhanVienTra", "HoTenNV");
+
+    const theoDoiMuonSach = await query.lean();
+
     if (!theoDoiMuonSach) {
-      throw new AppError('Không tìm thấy bản ghi theo dõi mượn sách', 404, 'THEODOIMUONSACH_NOT_FOUND');
+      throw new AppError(
+        "Không tìm thấy bản ghi theo dõi mượn sách",
+        404,
+        "THEODOIMUONSACH_NOT_FOUND"
+      );
     }
-    
+
     res.json({
       success: true,
-      message: 'Lấy thông tin theo dõi mượn sách thành công',
-      data: theoDoiMuonSach
+      message: "Lấy thông tin theo dõi mượn sách thành công",
+      data: theoDoiMuonSach,
     });
   },
 
@@ -117,226 +229,304 @@ export default {
    * POST /api/theodoimuonsach/muon - Mượn sách
    */
   async borrowBook(req, res) {
+    console.log("Creating new borrow record:", req.body);
+
     const { MaDocGia, MaSach, NgayHenTra, GhiChu, NhanVienMuon } = req.body;
 
     // Validate required fields
     if (!MaDocGia || !MaSach || !NgayHenTra || !NhanVienMuon) {
-      throw new AppError('Thiếu thông tin bắt buộc', 400, 'MISSING_REQUIRED_FIELDS');
+      throw new AppError(
+        "Thiếu thông tin bắt buộc",
+        400,
+        "MISSING_REQUIRED_FIELDS"
+      );
     }
 
     // Check if reader exists
-    const docGia = await DocGia.findOne({ MaDocGia });
+    console.log("Checking if reader exists:", MaDocGia);
+    const docGia = await DocGia.findOne({ MaDocGia }).lean();
     if (!docGia) {
-      throw new AppError('Không tìm thấy độc giả', 404, 'DOCGIA_NOT_FOUND');
+      throw new AppError("Không tìm thấy độc giả", 404, "DOCGIA_NOT_FOUND");
     }
 
     // Check if book exists and available
-    const sach = await Sach.findOne({ MaSach });
+    console.log("Checking if book exists:", MaSach);
+    const sach = await Sach.findOne({ MaSach }).lean();
     if (!sach) {
-      throw new AppError('Không tìm thấy sách', 404, 'SACH_NOT_FOUND');
+      throw new AppError("Không tìm thấy sách", 404, "SACH_NOT_FOUND");
     }
 
     if (sach.SoQuyen <= 0) {
-      throw new AppError('Sách đã hết', 400, 'BOOK_OUT_OF_STOCK');
+      throw new AppError("Sách đã hết", 400, "BOOK_OUT_OF_STOCK");
     }
 
     // Check if reader already borrowed this book and not returned
+    console.log("Checking existing borrow record...");
     const existingBorrow = await TheoDoiMuonSach.findOne({
       MaDocGia,
       MaSach,
-      TrangThai: { $ne: 'Đã trả' }
-    });
+      TrangThai: { $ne: "Đã trả" },
+    }).lean();
 
     if (existingBorrow) {
-      throw new AppError('Độc giả đã mượn sách này và chưa trả', 400, 'ALREADY_BORROWED');
+      throw new AppError(
+        "Độc giả đã mượn sách này và chưa trả",
+        400,
+        "ALREADY_BORROWED"
+      );
     }
 
     // Generate next ID
     const MaTheoDoiMuonSach = await generateNextId();
 
     // Create borrow record
+    console.log("Creating new TheoDoiMuonSach record...");
     const theoDoiMuonSach = new TheoDoiMuonSach({
       MaTheoDoiMuonSach,
       MaDocGia,
       MaSach,
       NgayMuon: new Date(),
       NgayHenTra: new Date(NgayHenTra),
-      GhiChu: GhiChu || '',
-      NhanVienMuon
+      GhiChu: GhiChu || "",
+      NhanVienMuon,
     });
 
     await theoDoiMuonSach.save();
+    console.log("Borrow record saved successfully");
 
     // Decrease book quantity
-    await Sach.findOneAndUpdate(
-      { MaSach },
-      { $inc: { SoQuyen: -1 } }
-    );
+    console.log("Decreasing book quantity...");
+    await Sach.findOneAndUpdate({ MaSach }, { $inc: { SoQuyen: -1 } });
+    console.log("Book quantity updated");
 
     // Populate and return
+    console.log("Populating response data...");
     const populatedRecord = await TheoDoiMuonSach.findById(theoDoiMuonSach._id)
-      .populate('MaDocGia', 'HoLot Ten')
-      .populate('MaSach', 'TenSach NguonGoc')
-      .populate('NhanVienMuon', 'HoTenNV');
+      .populate("MaDocGia", "HoLot Ten")
+      .populate("MaSach", "TenSach NguonGoc")
+      .populate("NhanVienMuon", "HoTenNV")
+      .lean();
 
     res.status(201).json({
       success: true,
-      message: 'Mượn sách thành công',
-      data: populatedRecord
+      message: "Mượn sách thành công",
+      data: populatedRecord,
     });
+
+    console.log("Borrow book operation completed successfully");
   },
 
   /**
    * PUT /api/theodoimuonsach/:id/tra - Trả sách
    */
   async returnBook(req, res) {
+    console.log("Processing book return for ID:", req.params.id);
+
     const { GhiChu, NhanVienTra } = req.body;
 
     if (!NhanVienTra) {
-      throw new AppError('Thiếu thông tin nhân viên xử lý trả sách', 400, 'MISSING_NHANVIEN_TRA');
+      throw new AppError(
+        "Thiếu thông tin nhân viên xử lý trả sách",
+        400,
+        "MISSING_NHANVIEN_TRA"
+      );
     }
 
-    const theoDoiMuonSach = await TheoDoiMuonSach.findOne({ 
-      MaTheoDoiMuonSach: req.params.id 
+    const theoDoiMuonSach = await TheoDoiMuonSach.findOne({
+      MaTheoDoiMuonSach: req.params.id,
     });
 
     if (!theoDoiMuonSach) {
-      throw new AppError('Không tìm thấy bản ghi mượn sách', 404, 'THEODOIMUONSACH_NOT_FOUND');
+      throw new AppError(
+        "Không tìm thấy bản ghi mượn sách",
+        404,
+        "THEODOIMUONSACH_NOT_FOUND"
+      );
     }
 
-    if (theoDoiMuonSach.TrangThai === 'Đã trả') {
-      throw new AppError('Sách đã được trả', 400, 'ALREADY_RETURNED');
+    if (theoDoiMuonSach.TrangThai === "Đã trả") {
+      throw new AppError("Sách đã được trả", 400, "ALREADY_RETURNED");
     }
 
     // Update return information
+    console.log("Updating return information...");
     theoDoiMuonSach.NgayTra = new Date();
-    theoDoiMuonSach.TrangThai = 'Đã trả';
+    theoDoiMuonSach.TrangThai = "Đã trả";
     theoDoiMuonSach.NhanVienTra = NhanVienTra;
     if (GhiChu) {
       theoDoiMuonSach.GhiChu = GhiChu;
     }
 
     await theoDoiMuonSach.save();
+    console.log("Return record updated successfully");
 
     // Increase book quantity
+    console.log("Increasing book quantity...");
     await Sach.findOneAndUpdate(
       { MaSach: theoDoiMuonSach.MaSach },
       { $inc: { SoQuyen: 1 } }
     );
+    console.log("Book quantity updated");
 
     // Populate and return
+    console.log("Populating response data...");
     const populatedRecord = await TheoDoiMuonSach.findById(theoDoiMuonSach._id)
-      .populate('MaDocGia', 'HoLot Ten')
-      .populate('MaSach', 'TenSach NguonGoc')
-      .populate('NhanVienMuon', 'HoTenNV')
-      .populate('NhanVienTra', 'HoTenNV');
+      .populate("MaDocGia", "HoLot Ten")
+      .populate("MaSach", "TenSach NguonGoc")
+      .populate("NhanVienMuon", "HoTenNV")
+      .populate("NhanVienTra", "HoTenNV")
+      .lean();
 
     res.json({
       success: true,
-      message: 'Trả sách thành công',
-      data: populatedRecord
+      message: "Trả sách thành công",
+      data: populatedRecord,
     });
+
+    console.log("Return book operation completed successfully");
   },
 
   /**
    * PUT /api/theodoimuonsach/:id/giahan - Gia hạn sách
    */
   async extendDueDate(req, res) {
+    console.log("Processing due date extension for ID:", req.params.id);
+
     const { NgayHenTra, GhiChu } = req.body;
 
     if (!NgayHenTra) {
-      throw new AppError('Thiếu ngày hẹn trả mới', 400, 'MISSING_NGAY_HEN_TRA');
+      throw new AppError("Thiếu ngày hẹn trả mới", 400, "MISSING_NGAY_HEN_TRA");
     }
 
     const newDueDate = new Date(NgayHenTra);
     if (newDueDate <= new Date()) {
-      throw new AppError('Ngày hẹn trả mới phải sau ngày hiện tại', 400, 'INVALID_DUE_DATE');
+      throw new AppError(
+        "Ngày hẹn trả mới phải sau ngày hiện tại",
+        400,
+        "INVALID_DUE_DATE"
+      );
     }
 
-    const theoDoiMuonSach = await TheoDoiMuonSach.findOne({ 
-      MaTheoDoiMuonSach: req.params.id 
+    const theoDoiMuonSach = await TheoDoiMuonSach.findOne({
+      MaTheoDoiMuonSach: req.params.id,
     });
 
     if (!theoDoiMuonSach) {
-      throw new AppError('Không tìm thấy bản ghi mượn sách', 404, 'THEODOIMUONSACH_NOT_FOUND');
+      throw new AppError(
+        "Không tìm thấy bản ghi mượn sách",
+        404,
+        "THEODOIMUONSACH_NOT_FOUND"
+      );
     }
 
-    if (theoDoiMuonSach.TrangThai === 'Đã trả') {
-      throw new AppError('Không thể gia hạn sách đã trả', 400, 'BOOK_ALREADY_RETURNED');
+    if (theoDoiMuonSach.TrangThai === "Đã trả") {
+      throw new AppError(
+        "Không thể gia hạn sách đã trả",
+        400,
+        "BOOK_ALREADY_RETURNED"
+      );
     }
 
     // Update due date
+    console.log("Updating due date...");
     theoDoiMuonSach.NgayHenTra = newDueDate;
     if (GhiChu) {
       theoDoiMuonSach.GhiChu = GhiChu;
     }
 
     await theoDoiMuonSach.save();
+    console.log("Due date updated successfully");
 
     // Populate and return
+    console.log("Populating response data...");
     const populatedRecord = await TheoDoiMuonSach.findById(theoDoiMuonSach._id)
-      .populate('MaDocGia', 'HoLot Ten')
-      .populate('MaSach', 'TenSach NguonGoc')
-      .populate('NhanVienMuon', 'HoTenNV');
+      .populate("MaDocGia", "HoLot Ten")
+      .populate("MaSach", "TenSach NguonGoc")
+      .populate("NhanVienMuon", "HoTenNV")
+      .lean();
 
     res.json({
       success: true,
-      message: 'Gia hạn sách thành công',
-      data: populatedRecord
+      message: "Gia hạn sách thành công",
+      data: populatedRecord,
     });
+
+    console.log("Extend due date operation completed successfully");
   },
 
   /**
    * GET /api/theodoimuonsach/overdue - Lấy danh sách sách quá hạn
    */
   async getOverdue(req, res) {
-    const overdueBooks = await TheoDoiMuonSach.find({
-      TrangThai: { $ne: 'Đã trả' },
-      NgayHenTra: { $lt: new Date() }
-    })
-      .populate('MaDocGia', 'HoLot Ten DienThoai')
-      .populate('MaSach', 'TenSach NguonGoc')
-      .populate('NhanVienMuon', 'HoTenNV')
-      .sort({ NgayHenTra: 1 });
+    console.log("Getting overdue books...");
+
+    let query = TheoDoiMuonSach.find({
+      TrangThai: { $ne: "Đã trả" },
+      NgayHenTra: { $lt: new Date() },
+    });
+
+    query = query.populate("MaDocGia", "HoLot Ten DienThoai");
+    query = query.populate("MaSach", "TenSach NguonGoc");
+    query = query.populate("NhanVienMuon", "HoTenNV");
+    query = query.sort({ NgayHenTra: 1 });
+
+    const overdueBooks = await query.lean();
+    console.log("Found", overdueBooks.length, "overdue books");
 
     res.json({
       success: true,
-      message: 'Lấy danh sách sách quá hạn thành công',
-      data: overdueBooks
+      message: "Lấy danh sách sách quá hạn thành công",
+      data: overdueBooks,
     });
+
+    console.log("Get overdue books operation completed successfully");
   },
 
   /**
    * GET /api/theodoimuonsach/docgia/:maDocGia - Lấy lịch sử mượn của độc giả
    */
   async getByReader(req, res) {
-    const history = await TheoDoiMuonSach.find({ MaDocGia: req.params.maDocGia })
-      .populate('MaSach', 'TenSach NguonGoc')
-      .populate('NhanVienMuon', 'HoTenNV')
-      .populate('NhanVienTra', 'HoTenNV')
-      .sort({ NgayMuon: -1 });
+    console.log("Getting borrow history for reader:", req.params.maDocGia);
+
+    let query = TheoDoiMuonSach.find({ MaDocGia: req.params.maDocGia });
+    query = query.populate("MaSach", "TenSach NguonGoc");
+    query = query.populate("NhanVienMuon", "HoTenNV");
+    query = query.populate("NhanVienTra", "HoTenNV");
+    query = query.sort({ NgayMuon: -1 });
+
+    const history = await query.lean();
+    console.log("Found", history.length, "borrow records for reader");
 
     res.json({
       success: true,
-      message: 'Lấy lịch sử mượn sách thành công',
-      data: history
+      message: "Lấy lịch sử mượn sách thành công",
+      data: history,
     });
+
+    console.log("Get reader borrow history operation completed successfully");
   },
 
   /**
    * GET /api/theodoimuonsach/sach/:maSach - Lấy lịch sử mượn của sách
    */
   async getByBook(req, res) {
-    const history = await TheoDoiMuonSach.find({ MaSach: req.params.maSach })
-      .populate('MaDocGia', 'HoLot Ten DienThoai')
-      .populate('NhanVienMuon', 'HoTenNV')
-      .populate('NhanVienTra', 'HoTenNV')
-      .sort({ NgayMuon: -1 });
+    console.log("Getting borrow history for book:", req.params.maSach);
+
+    let query = TheoDoiMuonSach.find({ MaSach: req.params.maSach });
+    query = query.populate("MaDocGia", "HoLot Ten DienThoai");
+    query = query.populate("NhanVienMuon", "HoTenNV");
+    query = query.populate("NhanVienTra", "HoTenNV");
+    query = query.sort({ NgayMuon: -1 });
+
+    const history = await query.lean();
+    console.log("Found", history.length, "borrow records for book");
 
     res.json({
       success: true,
-      message: 'Lấy lịch sử mượn sách thành công',
-      data: history
+      message: "Lấy lịch sử mượn sách thành công",
+      data: history,
     });
-  }
+
+    console.log("Get book borrow history operation completed successfully");
+  },
 };

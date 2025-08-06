@@ -7,9 +7,8 @@ const Register = () => import("../views/Register.vue");
 const UserList = () => import("../views/UserList.vue");
 const DocGia = () => import("../views/DocGia.vue");
 const Dashboard = () => import("../views/Dashboard.vue");
-const Sach = () => import("../views/Sach.vue");
+
 const SachNew = () => import("../views/SachNew.vue");
-const NhaXuatBan = () => import("../views/NhaXuatBan.vue");
 const NhaXuatBanNew = () => import("../views/NhaXuatBanNew.vue");
 const TheoDoiMuonSach = () => import("../views/TheoDoiMuonSach.vue");
 const AdminLayout = () => import("../layouts/AdminLayout.vue");
@@ -74,16 +73,6 @@ const routes = [
     ],
   },
 
-  // Legacy routes for backward compatibility
-  { path: "/home", name: "Home", component: Home },
-  { path: "/users", name: "UserListLegacy", component: UserList },
-  { path: "/sach", name: "SachLegacy", component: Sach },
-  { path: "/nhaxuatban", name: "NhaXuatBanLegacy", component: NhaXuatBan },
-  {
-    path: "/theodoimuonsach",
-    name: "TheoDoiMuonSachLegacy",
-    component: TheoDoiMuonSach,
-  },
 ];
 
 const router = createRouter({
