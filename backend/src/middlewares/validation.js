@@ -77,6 +77,13 @@ export const validate = (schema) => {
     try {
       const errors = [];
       
+      // Debug log
+      console.log('Validation middleware - req.body:', req.body);
+      
+      if (!req.body) {
+        return next(new Error('Request body is missing'));
+      }
+      
       for (const [field, rules] of Object.entries(schema)) {
         const value = req.body[field];
         

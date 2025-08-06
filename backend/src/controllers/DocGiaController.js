@@ -1,6 +1,7 @@
 import DocGia from "../models/DocGia.js";
 import { AppError } from '../middlewares/errorHandler.js';
 import TheoDoiMuonSach from '../models/TheoDoiMuonSach.js';
+import jwt from 'jsonwebtoken';
 
 /**
  * DocGia Controller - Quản lý độc giả
@@ -31,7 +32,8 @@ function buildSearchQuery(search) {
       { HoLot: searchRegex },
       { Ten: searchRegex },
       { DiaChi: searchRegex },
-      { DienThoai: searchRegex }
+      { DienThoai: searchRegex },
+      { email: searchRegex }
     ]
   };
   
@@ -158,6 +160,14 @@ export default {
       }
     }
     
+    // Check if email already exists
+    if (req.body.email) {
+      const existingEmail = await DocGia.findOne({ email: req.body.email.toLowerCase() });
+      if (existingEmail) {
+        throw new AppError('Email đã được sử dụng', 400, 'DUPLICATE_EMAIL');
+      }
+    }
+    
     const docGia = new DocGia(req.body);
     await docGia.save();
     
@@ -257,6 +267,242 @@ export default {
       success: true,
       message: 'Tìm kiếm độc giả thành công',
       data: docgia
+    });
+  },
+
+  /**
+   * POST /api/docgia/register - Đăng ký tài khoản độc giả
+   */
+  async register(req, res) {
+    console.log('Registering new DocGia account:', req.body.email);
+    
+    const { email, password, MaDocGia, HoLot, Ten, NgaySinh, Phai, DiaChi, DienThoai, avatar } = req.body;
+    
+    // Check if email already exists
+    const existingEmail = await DocGia.findOne({ email: email.toLowerCase() });
+    if (existingEmail) {
+      throw new AppError('Email đã được sử dụng', 400, 'DUPLICATE_EMAIL');
+    }
+    
+    // Check if MaDocGia already exists
+    if (MaDocGia) {
+      const existingDocGia = await DocGia.findOne({ MaDocGia });
+      if (existingDocGia) {
+        throw new AppError('Mã độc giả đã tồn tại', 400, 'DUPLICATE_MA_DOCGIA');
+      }
+    }
+    
+    // Check if DienThoai already exists
+    if (DienThoai) {
+      const existingPhone = await DocGia.findOne({ DienThoai });
+      if (existingPhone) {
+        throw new AppError('Số điện thoại đã được sử dụng', 400, 'DUPLICATE_PHONE');
+      }
+    }
+    
+    // Create new reader account
+    const docGia = new DocGia({
+      email,
+      password,
+      MaDocGia,
+      HoLot,
+      Ten,
+      NgaySinh,
+      Phai,
+      DiaChi,
+      DienThoai,
+      avatar
+    });
+    
+    await docGia.save();
+    
+    // Generate JWT token
+    const token = jwt.sign(
+      { 
+        id: docGia._id, 
+        MaDocGia: docGia.MaDocGia,
+        email: docGia.email,
+        role: 'reader'
+      },
+      process.env.JWT_SECRET || 'your-secret-key',
+      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+    );
+    
+    // Remove password from response
+    const docGiaResponse = docGia.toObject();
+    delete docGiaResponse.password;
+    
+    res.status(201).json({
+      success: true,
+      message: 'Đăng ký tài khoản thành công',
+      data: {
+        docGia: docGiaResponse,
+        token
+      }
+    });
+  },
+
+  /**
+   * POST /api/docgia/login - Đăng nhập tài khoản độc giả
+   */
+  async login(req, res) {
+    console.log('DocGia login attempt:', req.body.email);
+    
+    const { email, password } = req.body;
+    
+    if (!email || !password) {
+      throw new AppError('Email và mật khẩu là bắt buộc', 400, 'MISSING_CREDENTIALS');
+    }
+    
+    // Find user by email and include password
+    const docGia = await DocGia.findByEmail(email);
+    
+    if (!docGia) {
+      throw new AppError('Email hoặc mật khẩu không đúng', 401, 'INVALID_CREDENTIALS');
+    }
+    
+    // Check if account is active
+    if (!docGia.isActive) {
+      throw new AppError('Tài khoản đã bị vô hiệu hóa', 401, 'ACCOUNT_DISABLED');
+    }
+    
+    // Check password
+    const isPasswordValid = await docGia.comparePassword(password);
+    
+    if (!isPasswordValid) {
+      throw new AppError('Email hoặc mật khẩu không đúng', 401, 'INVALID_CREDENTIALS');
+    }
+    
+    // Update last login
+    await docGia.updateLastLogin();
+    
+    // Generate JWT token
+    const token = jwt.sign(
+      { 
+        id: docGia._id, 
+        MaDocGia: docGia.MaDocGia,
+        email: docGia.email,
+        role: 'reader'
+      },
+      process.env.JWT_SECRET || 'your-secret-key',
+      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+    );
+    
+    // Remove password from response
+    const docGiaResponse = docGia.toObject();
+    delete docGiaResponse.password;
+    
+    res.json({
+      success: true,
+      message: 'Đăng nhập thành công',
+      data: {
+        docGia: docGiaResponse,
+        token
+      }
+    });
+  },
+
+  /**
+   * GET /api/docgia/profile - Lấy thông tin profile độc giả
+   */
+  async getProfile(req, res) {
+    console.log('Getting DocGia profile:', req.user.id);
+    
+    const docGia = await DocGia.findById(req.user.id).select('-password');
+    
+    if (!docGia) {
+      throw new AppError('Không tìm thấy thông tin độc giả', 404, 'DOCGIA_NOT_FOUND');
+    }
+    
+    res.json({
+      success: true,
+      message: 'Lấy thông tin profile thành công',
+      data: docGia
+    });
+  },
+
+  /**
+   * PUT /api/docgia/profile - Cập nhật profile độc giả
+   */
+  async updateProfile(req, res) {
+    console.log('Updating DocGia profile:', req.user.id);
+    
+    const allowedUpdates = ['HoLot', 'Ten', 'NgaySinh', 'Phai', 'DiaChi', 'DienThoai', 'avatar'];
+    const updates = {};
+    
+    // Only allow specific fields to be updated
+    Object.keys(req.body).forEach(key => {
+      if (allowedUpdates.includes(key)) {
+        updates[key] = req.body[key];
+      }
+    });
+    
+    // Check if trying to update DienThoai to existing value
+    if (updates.DienThoai) {
+      const existingPhone = await DocGia.findOne({
+        DienThoai: updates.DienThoai,
+        _id: { $ne: req.user.id }
+      });
+      
+      if (existingPhone) {
+        throw new AppError('Số điện thoại đã được sử dụng', 400, 'DUPLICATE_PHONE');
+      }
+    }
+    
+    const docGia = await DocGia.findByIdAndUpdate(
+      req.user.id,
+      updates,
+      { new: true, runValidators: true }
+    ).select('-password');
+    
+    if (!docGia) {
+      throw new AppError('Không tìm thấy thông tin độc giả', 404, 'DOCGIA_NOT_FOUND');
+    }
+    
+    res.json({
+      success: true,
+      message: 'Cập nhật profile thành công',
+      data: docGia
+    });
+  },
+
+  /**
+   * PUT /api/docgia/change-password - Đổi mật khẩu
+   */
+  async changePassword(req, res) {
+    console.log('Changing password for DocGia:', req.user.id);
+    
+    const { currentPassword, newPassword } = req.body;
+    
+    if (!currentPassword || !newPassword) {
+      throw new AppError('Mật khẩu hiện tại và mật khẩu mới là bắt buộc', 400, 'MISSING_PASSWORDS');
+    }
+    
+    if (newPassword.length < 6) {
+      throw new AppError('Mật khẩu mới phải có ít nhất 6 ký tự', 400, 'PASSWORD_TOO_SHORT');
+    }
+    
+    // Find user with password
+    const docGia = await DocGia.findById(req.user.id).select('+password');
+    
+    if (!docGia) {
+      throw new AppError('Không tìm thấy thông tin độc giả', 404, 'DOCGIA_NOT_FOUND');
+    }
+    
+    // Check current password
+    const isCurrentPasswordValid = await docGia.comparePassword(currentPassword);
+    
+    if (!isCurrentPasswordValid) {
+      throw new AppError('Mật khẩu hiện tại không đúng', 401, 'INVALID_CURRENT_PASSWORD');
+    }
+    
+    // Update password
+    docGia.password = newPassword;
+    await docGia.save();
+    
+    res.json({
+      success: true,
+      message: 'Đổi mật khẩu thành công'
     });
   }
 };
