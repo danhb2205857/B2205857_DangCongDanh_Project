@@ -77,112 +77,92 @@
               </h5>
             </div>
             <div class="card-body">
-              <form @submit.prevent="updateProfile">
-                <div class="row">
-                  <div class="col-md-6 mb-3">
-                    <label for="hoLot" class="form-label">Họ lót</label>
-                    <input
-                      type="text"
-                      class="form-control"
-                      id="hoLot"
-                      v-model="profileForm.HoLot"
-                      required
-                      maxlength="50"
+              <dl class="row">
+                <div v-for="item in profileUser" :key="item.key" class="row">
+                  <dt class="col-sm-4">{{ item.label }}</dt>
+                  <dd class="col-sm-8">
+                    <span v-if="item.key !== 'avatar'">{{ item.value || '-' }}</span>
+                    <img 
+                      v-else 
+                      :src="item.value || '/images/avatar-default.svg'" 
+                      alt="Avatar" 
+                      style="width:60px;height:60px;border-radius:50%;object-fit:cover;"
+                      @error="handleAvatarError"
                     >
-                  </div>
-                  <div class="col-md-6 mb-3">
-                    <label for="ten" class="form-label">Tên</label>
-                    <input
-                      type="text"
-                      class="form-control"
-                      id="ten"
-                      v-model="profileForm.Ten"
-                      required
-                      maxlength="20"
-                    >
-                  </div>
+                  </dd>
                 </div>
+              </dl>
+              <div class="d-flex justify-content-end">
+                <button class="btn btn-primary" @click="showEditProfileModal = true">
+                  <i class="fas fa-edit me-2"></i> Cập nhật thông tin
+                </button>
+              </div>
+            </div>
+          </div>
 
-                <div class="row">
-                  <div class="col-md-6 mb-3">
-                    <label for="ngaySinh" class="form-label">Ngày sinh</label>
-                    <input
-                      type="date"
-                      class="form-control"
-                      id="ngaySinh"
-                      v-model="profileForm.NgaySinh"
-                      required
-                    >
-                  </div>
-                  <div class="col-md-6 mb-3">
-                    <label for="phai" class="form-label">Phái</label>
-                    <select class="form-select" id="phai" v-model="profileForm.Phai" required>
-                      <option value="">Chọn phái</option>
-                      <option value="Nam">Nam</option>
-                      <option value="Nữ">Nữ</option>
-                    </select>
-                  </div>
+          <!-- Edit Profile Modal -->
+          <div class="modal fade" id="editProfileModal" tabindex="-1" v-if="showEditProfileModal">
+            <div class="modal-dialog">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title">Cập nhật thông tin cá nhân</h5>
+                  <button type="button" class="btn-close" @click="showEditProfileModal = false"></button>
                 </div>
-
-                <div class="mb-3">
-                  <label for="diaChi" class="form-label">Địa chỉ</label>
-                  <textarea
-                    class="form-control"
-                    id="diaChi"
-                    rows="3"
-                    v-model="profileForm.DiaChi"
-                    required
-                    maxlength="200"
-                  ></textarea>
+                <div class="modal-body">
+                  <form @submit.prevent="submitEditProfile">
+                    <div class="row">
+                      <div class="col-md-6 mb-3">
+                        <label for="hoLotEdit" class="form-label">Họ lót</label>
+                        <input type="text" class="form-control" id="hoLotEdit" v-model="profileForm.HoLot" required maxlength="50">
+                      </div>
+                      <div class="col-md-6 mb-3">
+                        <label for="tenEdit" class="form-label">Tên</label>
+                        <input type="text" class="form-control" id="tenEdit" v-model="profileForm.Ten" required maxlength="20">
+                      </div>
+                    </div>
+                    <div class="row">
+                      <div class="col-md-6 mb-3">
+                        <label for="ngaySinhEdit" class="form-label">Ngày sinh</label>
+                        <input type="date" class="form-control" id="ngaySinhEdit" v-model="profileForm.NgaySinh" required>
+                      </div>
+                      <div class="col-md-6 mb-3">
+                        <label for="phaiEdit" class="form-label">Phái</label>
+                        <select class="form-select" id="phaiEdit" v-model="profileForm.Phai" required>
+                          <option value="">Chọn phái</option>
+                          <option value="Nam">Nam</option>
+                          <option value="Nữ">Nữ</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="mb-3">
+                      <label for="diaChiEdit" class="form-label">Địa chỉ</label>
+                      <textarea class="form-control" id="diaChiEdit" rows="3" v-model="profileForm.DiaChi" required maxlength="200"></textarea>
+                    </div>
+                    <div class="row">
+                      <div class="col-md-6 mb-3">
+                        <label for="dienThoaiEdit" class="form-label">Điện thoại</label>
+                        <input type="tel" class="form-control" id="dienThoaiEdit" v-model="profileForm.DienThoai" required pattern="^(0|\+84)[0-9]{9,10}$">
+                      </div>
+                      <div class="col-md-6 mb-3">
+                        <label for="emailEdit" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="emailEdit" :value="user?.email" disabled readonly>
+                        <div class="form-text">Email không thể thay đổi</div>
+                      </div>
+                    </div>
+                    <div class="mb-3">
+                      <label for="avatarEdit" class="form-label">Avatar URL</label>
+                      <input type="url" class="form-control" id="avatarEdit" v-model="profileForm.avatar" placeholder="https://example.com/avatar.jpg">
+                    </div>
+                    <div class="d-flex justify-content-end">
+                      <button type="button" class="btn btn-secondary me-2" @click="showEditProfileModal = false">Hủy</button>
+                      <button type="submit" class="btn btn-primary" :disabled="loading">
+                        <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
+                        Lưu thay đổi
+                      </button>
+                    </div>
+                  </form>
                 </div>
-
-                <div class="row">
-                  <div class="col-md-6 mb-3">
-                    <label for="dienThoai" class="form-label">Điện thoại</label>
-                    <input
-                      type="tel"
-                      class="form-control"
-                      id="dienThoai"
-                      v-model="profileForm.DienThoai"
-                      required
-                      pattern="^(0|\+84)[0-9]{9,10}$"
-                    >
-                  </div>
-                  <div class="col-md-6 mb-3">
-                    <label for="email" class="form-label">Email</label>
-                    <input
-                      type="email"
-                      class="form-control"
-                      id="email"
-                      :value="user?.email"
-                      disabled
-                      readonly
-                    >
-                    <div class="form-text">Email không thể thay đổi</div>
-                  </div>
-                </div>
-
-                <div class="mb-3">
-                  <label for="avatar" class="form-label">Avatar URL</label>
-                  <input
-                    type="url"
-                    class="form-control"
-                    id="avatar"
-                    v-model="profileForm.avatar"
-                    placeholder="https://example.com/avatar.jpg"
-                  >
-                </div>
-
-                <div class="d-flex justify-content-end">
-                  <button type="button" class="btn btn-secondary me-2" @click="resetForm">
-                    Hủy
-                  </button>
-                  <button type="submit" class="btn btn-primary" :disabled="loading">
-                    <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
-                    Cập nhật
-                  </button>
-                </div>
-              </form>
+              </div>
             </div>
           </div>
 
@@ -206,7 +186,6 @@
                     required
                   >
                 </div>
-
                 <div class="mb-3">
                   <label for="newPassword" class="form-label">Mật khẩu mới</label>
                   <input
@@ -219,7 +198,6 @@
                   >
                   <div class="form-text">Mật khẩu phải có ít nhất 6 ký tự</div>
                 </div>
-
                 <div class="mb-3">
                   <label for="confirmPassword" class="form-label">Xác nhận mật khẩu mới</label>
                   <input
@@ -234,7 +212,6 @@
                     Mật khẩu xác nhận không khớp
                   </div>
                 </div>
-
                 <div class="d-flex justify-content-end">
                   <button type="button" class="btn btn-secondary me-2" @click="resetPasswordForm">
                     Hủy
@@ -278,7 +255,7 @@
                     </thead>
                     <tbody>
                       <tr v-for="borrow in borrowedBooks" :key="borrow._id">
-                        <td>{{ borrow.TenSach }}</td>
+                        <td>{{ borrow.MaSach?.TenSach || '-' }}</td>
                         <td>{{ formatDate(borrow.NgayMuon) }}</td>
                         <td>{{ formatDate(borrow.NgayHenTra) }}</td>
                         <td>
@@ -323,7 +300,7 @@
                     </thead>
                     <tbody>
                       <tr v-for="history in borrowHistory" :key="history._id">
-                        <td>{{ history.TenSach }}</td>
+                        <td>{{ history.MaSach?.TenSach || '-' }}</td>
                         <td>{{ formatDate(history.NgayMuon) }}</td>
                         <td>{{ history.NgayTra ? formatDate(history.NgayTra) : '-' }}</td>
                         <td>
@@ -405,13 +382,14 @@ import axios from '@/utils/axios'
 export default {
   name: 'Profile',
   setup() {
-    const { user, getProfile, updateProfile: updateUserProfile, changePassword: changeUserPassword } = useAuth()
+    const { user, token, logout, updateProfile: updateUserProfile, changePassword: changeUserPassword } = useAuth()
     
     const activeTab = ref('profile')
     const loading = ref(false)
     const message = ref('')
     const messageType = ref('success')
     const showAvatarModal = ref(false)
+    const showEditProfileModal = ref(false)
     const avatarUrl = ref('')
     const borrowedBooks = ref([])
     const borrowHistory = ref([])
@@ -434,27 +412,68 @@ export default {
       confirmPassword: ''
     })
 
-    // Initialize form with user data
-    const initializeForm = () => {
-      if (user.value) {
-        profileForm.HoLot = user.value.HoLot || ''
-        profileForm.Ten = user.value.Ten || ''
-        profileForm.NgaySinh = user.value.NgaySinh ? new Date(user.value.NgaySinh).toISOString().split('T')[0] : ''
-        profileForm.Phai = user.value.Phai || ''
-        profileForm.DiaChi = user.value.DiaChi || ''
-        profileForm.DienThoai = user.value.DienThoai || ''
-        profileForm.avatar = user.value.avatar || ''
-        avatarUrl.value = user.value.avatar || ''
+    // Get profile
+    const getProfile = async () => {
+      try {
+        if (!token.value) {
+          return { success: false, error: 'Không có token' }
+        }
+        const response = await axios.get('/docgia/profile')
+        user.value = response.data.data
+        localStorage.setItem('user', JSON.stringify(response.data.data))
+        return { success: true, user: response.data.data }
+      } catch (error) {
+        if (error.response?.status === 401) {
+          await logout()
+        }
+        return {
+          success: false,
+          error: error.response?.data?.message || 'Không thể lấy thông tin profile'
+        }
       }
     }
 
-    // Update profile
-    const updateProfile = async () => {
+    // Profile user array for display
+    const profileUser = computed(() => {
+      if (user.value?._doc) {
+        return [
+          { key: 'HoLot', label: 'Họ lót', value: user.value._doc.HoLot || '-' },
+          { key: 'Ten', label: 'Tên', value: user.value._doc.Ten || '-' },
+          { key: 'NgaySinh', label: 'Ngày sinh', value: user.value._doc.NgaySinh ? formatDate(user.value._doc.NgaySinh) : '-' },
+          { key: 'Phai', label: 'Phái', value: user.value._doc.Phai || '-' },
+          { key: 'DiaChi', label: 'Địa chỉ', value: user.value._doc.DiaChi || '-' },
+          { key: 'DienThoai', label: 'Điện thoại', value: user.value._doc.DienThoai || '-' },
+          { key: 'email', label: 'Email', value: user.value._doc.email || '-' },
+          { key: 'avatar', label: 'Avatar', value: user.value._doc.avatar || '' }
+        ]
+      }
+      return []
+    })
+
+    // Initialize form with user data
+    const initializeForm = () => {
+      if (user.value?._doc) {
+        profileForm.HoLot = user.value._doc.HoLot || ''
+        profileForm.Ten = user.value._doc.Ten || ''
+        profileForm.NgaySinh = user.value._doc.NgaySinh ? new Date(user.value._doc.NgaySinh).toISOString().split('T')[0] : ''
+        profileForm.Phai = user.value._doc.Phai || ''
+        profileForm.DiaChi = user.value._doc.DiaChi || ''
+        profileForm.DienThoai = user.value._doc.DienThoai || ''
+        profileForm.avatar = user.value._doc.avatar || ''
+        avatarUrl.value = user.value._doc.avatar || ''
+      }
+    }
+
+    // Submit edit profile
+    const submitEditProfile = async () => {
       loading.value = true
       try {
         const result = await updateUserProfile(profileForm)
         if (result.success) {
           showMessage('Cập nhật thông tin thành công!', 'success')
+          showEditProfileModal.value = false
+          await getProfile()
+          initializeForm()
         } else {
           showMessage(result.error, 'error')
         }
@@ -495,37 +514,48 @@ export default {
     // Update avatar
     const updateAvatar = async () => {
       profileForm.avatar = avatarUrl.value
-      await updateProfile()
-      showAvatarModal.value = false
+      loading.value = true
+      try {
+        const result = await updateUserProfile({ avatar: avatarUrl.value })
+        if (result.success) {
+          showMessage('Cập nhật avatar thành công!', 'success')
+          showAvatarModal.value = false
+          await getProfile()
+          initializeForm()
+        } else {
+          showMessage(result.error, 'error')
+        }
+      } catch (error) {
+        showMessage('Có lỗi xảy ra khi cập nhật avatar!', 'error')
+      } finally {
+        loading.value = false
+      }
     }
 
     // Load borrowed books
     const loadBorrowedBooks = async () => {
       try {
-        // This would be implemented when borrow system is ready
-        // const response = await axios.get('/api/docgia/borrows')
-        // borrowedBooks.value = response.data.data || []
+        if (!user.value?._doc.MaDocGia) return
+        const response = await axios.get(`/theodoimuonsach/docgia/${user.value._doc.MaDocGia}`)
+        const allBorrows = response.data.data || []
+        borrowedBooks.value = allBorrows.filter(b => !b.NgayTra)
       } catch (error) {
-        console.error('Error loading borrowed books:', error)
+        showMessage('Có lỗi khi tải danh sách sách đang mượn!', 'error')
       }
     }
 
     // Load borrow history
     const loadBorrowHistory = async () => {
       try {
-        // This would be implemented when borrow system is ready
-        // const response = await axios.get('/api/docgia/borrow-history')
-        // borrowHistory.value = response.data.data || []
+        if (!user.value?._doc.MaDocGia) return
+        const response = await axios.get(`/theodoimuonsach/docgia/${user.value._doc.MaDocGia}`)
+        borrowHistory.value = response.data.data || []
       } catch (error) {
-        console.error('Error loading borrow history:', error)
+        showMessage('Có lỗi khi tải lịch sử mượn sách!', 'error')
       }
     }
 
     // Reset forms
-    const resetForm = () => {
-      initializeForm()
-    }
-
     const resetPasswordForm = () => {
       passwordForm.currentPassword = ''
       passwordForm.newPassword = ''
@@ -562,10 +592,14 @@ export default {
 
     // Load data on mount
     onMounted(async () => {
-      await getProfile()
-      initializeForm()
-      loadBorrowedBooks()
-      loadBorrowHistory()
+      const result = await getProfile()
+      if (result.success) {
+        initializeForm()
+        loadBorrowedBooks()
+        loadBorrowHistory()
+      } else {
+        showMessage(result.error, 'error')
+      }
     })
 
     return {
@@ -575,15 +609,16 @@ export default {
       message,
       messageType,
       showAvatarModal,
+      showEditProfileModal,
       avatarUrl,
       borrowedBooks,
       borrowHistory,
       profileForm,
       passwordForm,
-      updateProfile,
+      profileUser,
+      submitEditProfile,
       changePassword,
       updateAvatar,
-      resetForm,
       resetPasswordForm,
       formatDate,
       isOverdue,

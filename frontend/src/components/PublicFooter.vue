@@ -1,6 +1,38 @@
 <template>
   <footer class="bg-light text-center text-lg-start mt-5">
     <div class="container py-5">
+      <!-- Statistics Section -->
+      <div class="row mb-4 pb-4 border-bottom">
+        <div class="col-12">
+          <div class="row text-center">
+            <div class="col-6 col-md-3 mb-3">
+              <div class="stat-item">
+                <h4 class="text-primary fw-bold">{{ stats.totalBooks }}</h4>
+                <small class="text-muted">Tổng số sách</small>
+              </div>
+            </div>
+            <div class="col-6 col-md-3 mb-3">
+              <div class="stat-item">
+                <h4 class="text-success fw-bold">{{ stats.totalMembers }}</h4>
+                <small class="text-muted">Thành viên</small>
+              </div>
+            </div>
+            <div class="col-6 col-md-3 mb-3">
+              <div class="stat-item">
+                <h4 class="text-info fw-bold">{{ stats.totalBorrows }}</h4>
+                <small class="text-muted">Lượt mượn</small>
+              </div>
+            </div>
+            <div class="col-6 col-md-3 mb-3">
+              <div class="stat-item">
+                <h4 class="text-warning fw-bold">{{ stats.totalCategories }}</h4>
+                <small class="text-muted">Nhà xuất bản</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="row footer-content">
         <!-- Contact Section -->
         <div class="col-md-4 mb-4">
@@ -24,7 +56,7 @@
             <li class="mb-2">
               <span class="text-muted">
                 <i class="fas fa-map-marker-alt me-2"></i>
-                123 Đường ABC, Quận 1, TP.HCM
+                Khu dân cư 91B, Cần Thơ
               </span>
             </li>
             <li class="mb-2">
@@ -39,19 +71,14 @@
         <!-- Library Info Section -->
         <div class="col-md-4 mb-4 text-center">
           <router-link to="/" class="text-decoration-none">
-            <img 
-              src="/images/library-logo.svg" 
-              alt="Thư viện" 
-              class="img-fluid mb-3 footer-logo"
-              @error="handleLogoError"
-            >
+            <img src="/images/logo.png" alt="Thư viện" class="img-fluid mb-3 footer-logo" @error="handleLogoError">
           </router-link>
           <h4 class="fw-bold text-primary mb-3">Thư viện sách điện tử</h4>
           <p class="text-muted mb-3">
-            Hệ thống quản lý thư viện hiện đại, cung cấp dịch vụ mượn trả sách trực tuyến 
+            Hệ thống quản lý thư viện hiện đại, cung cấp dịch vụ mượn trả sách trực tuyến
             với kho tàng tri thức phong phú và đa dạng.
           </p>
-          
+
           <!-- Social Media -->
           <div class="social-links">
             <a href="#" class="btn btn-outline-primary btn-sm me-2" title="Facebook">
@@ -127,48 +154,12 @@
           </div>
         </div>
       </div>
-
-      <!-- Statistics Section -->
-      <div class="row mt-4 pt-4 border-top">
-        <div class="col-12">
-          <div class="row text-center">
-            <div class="col-6 col-md-3 mb-3">
-              <div class="stat-item">
-                <h4 class="text-primary fw-bold">{{ stats.totalBooks }}</h4>
-                <small class="text-muted">Tổng số sách</small>
-              </div>
-            </div>
-            <div class="col-6 col-md-3 mb-3">
-              <div class="stat-item">
-                <h4 class="text-success fw-bold">{{ stats.totalMembers }}</h4>
-                <small class="text-muted">Thành viên</small>
-              </div>
-            </div>
-            <div class="col-6 col-md-3 mb-3">
-              <div class="stat-item">
-                <h4 class="text-info fw-bold">{{ stats.totalBorrows }}</h4>
-                <small class="text-muted">Lượt mượn</small>
-              </div>
-            </div>
-            <div class="col-6 col-md-3 mb-3">
-              <div class="stat-item">
-                <h4 class="text-warning fw-bold">{{ stats.totalCategories }}</h4>
-                <small class="text-muted">Nhà xuất bản</small>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
 
 
     <!-- Back to Top Button -->
-    <button 
-      v-show="showBackToTop"
-      @click="scrollToTop"
-      class="btn btn-primary btn-floating back-to-top"
-      title="Về đầu trang"
-    >
+    <button v-show="showBackToTop" @click="scrollToTop" class="btn btn-primary btn-floating back-to-top"
+      title="Về đầu trang">
       <i class="fas fa-arrow-up"></i>
     </button>
   </footer>
@@ -193,27 +184,38 @@ export default {
 
     const loadStats = async () => {
       try {
-        // Load basic stats from APIs
-        const [booksRes, membersRes, categoriesRes] = await Promise.all([
-          axios.get('/sach?limit=1').catch(() => ({ data: { data: { pagination: { total: 0 } } } })),
-          axios.get('/docgia?limit=1').catch(() => ({ data: { data: { pagination: { total: 0 } } } })),
-          axios.get('/nhaxuatban?limit=1').catch(() => ({ data: { data: { pagination: { total: 0 } } } }))
+        // Load basic stats from APIs (không truyền limit)
+        const [booksRes, membersRes, categoriesRes, borrowsRes] = await Promise.all([
+          axios.get('/sach').catch(() => ({ data: { data: [], pagination: { total: 0 } } })),
+          axios.get('/docgia').catch(() => ({ data: { data: [], pagination: { total: 0 } } })),
+          axios.get('/nhaxuatban').catch(() => ({ data: { data: [], pagination: { total: 0 } } })),
         ])
 
+        // Lấy tổng số linh hoạt: ưu tiên pagination.total, fallback sang data.length
+        const getTotal = (res) => {
+          if (res.data && res.data.pagination && typeof res.data.pagination.total === 'number') {
+            return res.data.pagination.total
+          }
+          if (Array.isArray(res.data.data)) {
+            return res.data.data.length
+          }
+          return 0
+        }
+
         stats.value = {
-          totalBooks: booksRes.data.data.pagination?.total || 0,
-          totalMembers: membersRes.data.data.pagination?.total || 0,
-          totalBorrows: 0, // Will be updated when borrow API is available
-          totalCategories: categoriesRes.data.data.pagination?.total || 0
+          totalBooks: getTotal(booksRes),
+          totalMembers: getTotal(membersRes),
+          totalBorrows: getTotal(borrowsRes),
+          totalCategories: getTotal(categoriesRes)
         }
       } catch (error) {
-        console.error('Error loading footer stats:', error)
+        // console.error('Error loading footer stats:', error)
         // Use default values if API fails
         stats.value = {
-          totalBooks: 1250,
-          totalMembers: 850,
-          totalBorrows: 3200,
-          totalCategories: 25
+          totalBooks: 10,
+          totalMembers: 8,
+          totalBorrows: 13,
+          totalCategories: 15
         }
       }
     }
@@ -314,18 +316,18 @@ export default {
   .footer-content {
     text-align: center;
   }
-  
+
   .footer-content .col-md-4 {
     margin-bottom: 2rem;
   }
-  
+
   .back-to-top {
     bottom: 20px;
     right: 20px;
     width: 45px;
     height: 45px;
   }
-  
+
   .stat-item h4 {
     font-size: 1.5rem;
   }

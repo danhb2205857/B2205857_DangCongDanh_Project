@@ -407,8 +407,8 @@ export default {
    */
   async getProfile(req, res) {
     console.log('Getting DocGia profile:', req.user.id);
-    
     const docGia = await DocGia.findById(req.user.id).select('-password');
+    console.log('docGia:', docGia);
     
     if (!docGia) {
       throw new AppError('Không tìm thấy thông tin độc giả', 404, 'DOCGIA_NOT_FOUND');

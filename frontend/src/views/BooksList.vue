@@ -1,33 +1,35 @@
 <template>
   <div class="books-list">
-    <!-- Page Header -->
-    <div class="page-header mb-4">
-      <div class="row align-items-center">
-        <div class="col-md-8">
-          <h1 class="mb-2">
-            <i class="fas fa-book text-primary me-2"></i>
-            {{ pageTitle }}
-          </h1>
-          <p class="text-muted mb-0">{{ pageDescription }}</p>
-        </div>
-        <div class="col-md-4 text-md-end">
-          <div class="d-flex gap-2 justify-content-md-end">
-            <button 
-              class="btn btn-outline-secondary"
-              :class="{ active: viewMode === 'grid' }"
-              @click="viewMode = 'grid'"
-              title="Xem dạng lưới"
-            >
-              <i class="fas fa-th"></i>
-            </button>
-            <button 
-              class="btn btn-outline-secondary"
-              :class="{ active: viewMode === 'list' }"
-              @click="viewMode = 'list'"
-              title="Xem dạng danh sách"
-            >
-              <i class="fas fa-list"></i>
-            </button>
+    <!-- Page Header (improved) -->
+    <div class="page-header bg-primary text-white py-5 mb-5 rounded-3 shadow-sm">
+      <div class="container">
+        <div class="row align-items-center">
+          <div class="col-md-8">
+            <h1 class="display-4 fw-bold mb-3">
+              <i class="fas fa-book fa-lg me-2"></i>
+              {{ pageTitle }}
+            </h1>
+            <p class="lead mb-0 opacity-75">{{ pageDescription }}</p>
+          </div>
+          <div class="col-md-4 text-center text-md-end mt-4 mt-md-0">
+            <div class="d-inline-flex gap-2 justify-content-md-end">
+              <button 
+                class="btn btn-light btn-lg px-4"
+                :class="{ active: viewMode === 'grid' }"
+                @click="viewMode = 'grid'"
+                title="Xem dạng lưới"
+              >
+                <i class="fas fa-th"></i>
+              </button>
+              <button 
+                class="btn btn-light btn-lg px-4"
+                :class="{ active: viewMode === 'list' }"
+                @click="viewMode = 'list'"
+                title="Xem dạng danh sách"
+              >
+                <i class="fas fa-list"></i>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -164,7 +166,7 @@
                   <td>
                     <div class="d-flex align-items-center">
                       <img 
-                        :src="getBookImage(book)" 
+                        src="/images/dacnhantam.jpg" 
                         class="book-thumb-small me-3"
                         :alt="book.TenSach"
                         @error="handleImageError"

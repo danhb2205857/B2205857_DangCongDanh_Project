@@ -19,8 +19,6 @@ const PublicHome = () => import("../views/PublicHome.vue");
 const BooksList = () => import("../views/BooksList.vue");
 const BookDetail = () => import("../views/BookDetail.vue");
 const Profile = () => import("../views/Profile.vue");
-const MyBorrows = () => import("../views/MyBorrows.vue");
-const BorrowHistory = () => import("../views/BorrowHistory.vue");
 const About = () => import("../views/About.vue");
 const Contact = () => import("../views/Contact.vue");
 const Help = () => import("../views/Help.vue");
@@ -38,8 +36,6 @@ const routes = [
       { path: "books", name: "Books", component: BooksList },
       { path: "books/:id", name: "BookDetail", component: BookDetail },
       { path: "profile", name: "Profile", component: Profile },
-      { path: "my-borrows", name: "MyBorrows", component: MyBorrows },
-      { path: "borrow-history", name: "BorrowHistory", component: BorrowHistory },
       { path: "about", name: "About", component: About },
       { path: "contact", name: "Contact", component: Contact },
       { path: "help", name: "Help", component: Help },

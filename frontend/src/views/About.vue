@@ -1,17 +1,18 @@
 <template>
   <div class="about-page">
-    <!-- Hero Section -->
-    <div class="hero-section bg-primary text-white py-5 mb-5">
+    <!-- Page Header (improved, đồng bộ BooksList) -->
+    <div class="page-header bg-primary text-white py-5 mb-5 rounded-3 shadow-sm">
       <div class="container">
         <div class="row align-items-center">
-          <div class="col-md-6">
-            <h1 class="display-4 fw-bold mb-4">Về chúng tôi</h1>
-            <p class="lead">
-              Hệ thống thư viện hiện đại, phục vụ cộng đồng với tình yêu tri thức
-            </p>
+          <div class="col-md-8">
+            <h1 class="display-4 fw-bold mb-3">
+              <i class="fas fa-university fa-lg me-2"></i>
+              Về chúng tôi
+            </h1>
+            <p class="lead mb-0 opacity-75">Hệ thống thư viện hiện đại, phục vụ cộng đồng với tình yêu tri thức</p>
           </div>
-          <div class="col-md-6 text-center">
-            <i class="fas fa-university fa-5x opacity-75"></i>
+          <div class="col-md-4 text-center text-md-end mt-4 mt-md-0">
+            <i class="fas fa-university fa-4x opacity-75"></i>
           </div>
         </div>
       </div>
@@ -156,8 +157,7 @@
           </div>
           <div class="col-md-6">
             <div class="image-placeholder bg-light rounded p-5 text-center">
-              <i class="fas fa-building fa-5x text-muted mb-3"></i>
-              <p class="text-muted">Hình ảnh thư viện</p>
+              <img src="/images/library.jpg" alt="">
             </div>
           </div>
         </div>
@@ -188,21 +188,36 @@
       </div>
     </div>
 
-    <!-- Contact CTA -->
-    <div class="contact-cta bg-primary text-white py-5">
+    <!-- Contact CTA (improved, đồng bộ Contact.vue) -->
+    <div class="contact-cta-section bg-primary text-white py-5 mt-5 rounded-3 shadow-sm">
       <div class="container text-center">
-        <h3 class="mb-4">Bạn có câu hỏi nào không?</h3>
-        <p class="lead mb-4">
-          Đội ngũ của chúng tôi luôn sẵn sàng hỗ trợ bạn
+        <h2 class="display-6 fw-bold mb-3">
+          <i class="fas fa-headset fa-lg me-2"></i>
+          Bạn có câu hỏi nào không?
+        </h2>
+        <p class="lead mb-4 opacity-75">
+          Đội ngũ của chúng tôi luôn sẵn sàng hỗ trợ và giải đáp mọi thắc mắc của bạn!
         </p>
-        <router-link to="/contact" class="btn btn-light btn-lg">
-          <i class="fas fa-phone me-2"></i>
-          Liên hệ ngay
+        <router-link to="/contact" class="btn btn-light btn-lg px-4 me-2 mb-2">
+          <i class="fas fa-phone-alt me-2"></i> Liên hệ ngay
         </router-link>
+        <a href="mailto:library@example.com" class="btn btn-outline-light btn-lg px-4 mb-2">
+          <i class="fas fa-envelope me-2"></i> Gửi email
+        </a>
       </div>
     </div>
   </div>
 </template>
+
+<style scoped>
+.contact-cta-section {
+  background: linear-gradient(90deg, #0d6efd 60%, #2563eb 100%);
+}
+.contact-cta-section .btn {
+  min-width: 220px;
+  font-size: 1.1rem;
+}
+</style>
 
 <script>
 import { ref, onMounted } from 'vue'

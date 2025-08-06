@@ -5,7 +5,7 @@
             <div id="heroCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="3000">
                 <div class="carousel-inner rounded-4 shadow">
                     <div class="carousel-item active">
-                        <img src="/images/slider_1.jpg" class="d-block w-100 hero-image" alt="Thư viện sách"
+                        <img src="/images/slider_4.jpg" class="d-block w-100 hero-image" alt="Thư viện sách"
                             @error="handleImageError">
                         <div class="carousel-caption d-none d-md-block">
                             <h2>Khám phá thế giới tri thức</h2>
@@ -13,7 +13,7 @@
                         </div>
                     </div>
                     <div class="carousel-item">
-                        <img src="/images/slider_2.png" class="d-block w-100 hero-image" alt="Đọc sách"
+                        <img src="/images/slider_5.jpg" class="d-block w-100 hero-image" alt="Đọc sách"
                             @error="handleImageError">
                         <div class="carousel-caption d-none d-md-block">
                             <h2>Mượn sách dễ dàng</h2>
@@ -21,7 +21,7 @@
                         </div>
                     </div>
                     <div class="carousel-item">
-                        <img src="/images/slider_3.jpg" class="d-block w-100 hero-image" alt="Học tập"
+                        <img src="/images/slider_6.jpg" class="d-block w-100 hero-image" alt="Học tập"
                             @error="handleImageError">
                         <div class="carousel-caption d-none d-md-block">
                             <h2>Không gian học tập lý tưởng</h2>
@@ -240,6 +240,18 @@ export default {
             loadCategories()
             loadNewBooks()
             loadStats()
+            // Đảm bảo Bootstrap Carousel tự động chuyển slide sau 3s
+            if (typeof window !== 'undefined' && window.bootstrap) {
+                const carouselEl = document.getElementById('heroCarousel')
+                if (carouselEl) {
+                    // eslint-disable-next-line no-undef
+                    new window.bootstrap.Carousel(carouselEl, {
+                        interval: 3000,
+                        ride: 'carousel',
+                        pause: false
+                    })
+                }
+            }
         })
 
         return {

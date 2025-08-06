@@ -5,7 +5,7 @@
         <!-- Brand -->
         <router-link to="/" class="navbar-brand d-flex align-items-center">
           <img src="/images/logo.png" alt="Thư viện" class="logo me-2" @error="handleLogoError">
-          <span class="fw-bold">Thư viện sách</span>
+          <span class="fw-bold">CDBook</span>
         </router-link>
 
         <!-- Mobile toggle -->
@@ -100,16 +100,6 @@
                 <li>
                   <router-link to="/profile" class="dropdown-item" @click="closeDropdowns">
                     <i class="fas fa-user me-2"></i>Trang cá nhân
-                  </router-link>
-                </li>
-                <li>
-                  <router-link to="/my-borrows" class="dropdown-item" @click="closeDropdowns">
-                    <i class="fas fa-book me-2"></i>Sách đang mượn
-                  </router-link>
-                </li>
-                <li>
-                  <router-link to="/borrow-history" class="dropdown-item" @click="closeDropdowns">
-                    <i class="fas fa-history me-2"></i>Lịch sử mượn
                   </router-link>
                 </li>
                 <li>

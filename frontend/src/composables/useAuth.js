@@ -213,21 +213,27 @@ export function useAuth() {
   };
 
   // Get user profile (for readers)
-  const getProfile = async () => {
-    try {
-      const response = await axios.get("/docgia/profile");
-      user.value = response.data.data;
-      localStorage.setItem("user", JSON.stringify(response.data.data));
-      return { success: true, user: response.data.data };
-    } catch (error) {
-      console.error("Get profile error:", error);
-      return {
-        success: false,
-        error:
-          error.response?.data?.message || "Không thể lấy thông tin profile",
-      };
+const getProfile = async () => {
+  try {
+    if (!token.value) {
+      return { success: false, error: 'Không có token' };
     }
-  };
+
+    const response = await axios.get("/docgia/profile");
+    user.value = response.data.data;
+    localStorage.setItem("user", JSON.stringify(response.data.data));
+    return { success: true, user: response.data.data };
+  } catch (error) {
+    if (error.response?.status === 401) {
+      await logout();
+    }
+
+    return {
+      success: false,
+      error: error.response?.data?.message || "Không thể lấy thông tin profile",
+    };
+  }
+};
 
   // Update profile (for readers)
   const updateProfile = async (profileData) => {

@@ -1,17 +1,18 @@
 <template>
   <div class="contact-page">
-    <!-- Page Header -->
-    <div class="page-header bg-primary text-white py-5 mb-5">
+    <!-- Page Header (improved, đồng bộ BooksList) -->
+    <div class="page-header bg-primary text-white py-5 mb-5 rounded-3 shadow-sm">
       <div class="container">
         <div class="row align-items-center">
           <div class="col-md-8">
-            <h1 class="display-4 fw-bold mb-3">Liên hệ với chúng tôi</h1>
-            <p class="lead">
-              Chúng tôi luôn sẵn sàng lắng nghe và hỗ trợ bạn
-            </p>
+            <h1 class="display-4 fw-bold mb-3">
+              <i class="fas fa-phone-alt fa-lg me-2"></i>
+              Liên hệ với chúng tôi
+            </h1>
+            <p class="lead mb-0 opacity-75">Chúng tôi luôn sẵn sàng lắng nghe và hỗ trợ bạn</p>
           </div>
-          <div class="col-md-4 text-center">
-            <i class="fas fa-phone-alt fa-5x opacity-75"></i>
+          <div class="col-md-4 text-center text-md-end mt-4 mt-md-0">
+            <i class="fas fa-phone-alt fa-4x opacity-75"></i>
           </div>
         </div>
       </div>
@@ -126,8 +127,8 @@
                   <div>
                     <h6>Địa chỉ</h6>
                     <p class="text-muted mb-0">
-                      123 Đường ABC, Phường XYZ<br>
-                      Quận 1, TP. Hồ Chí Minh
+                      8 Đường B10, Khu dân cư 91B<br>
+                      Cần Thơ, Việt Nam
                     </p>
                   </div>
                 </div>
@@ -157,8 +158,8 @@
                   <div>
                     <h6>Email</h6>
                     <p class="text-muted mb-0">
-                      <a href="mailto:library@example.com" class="text-decoration-none">
-                        library@example.com
+                      <a href="mailto:danhb2205857@student.ctu.edu.vn" class="text-decoration-none">
+                        danhb2205857@student.ctu.edu.vn
                       </a>
                     </p>
                   </div>
@@ -250,11 +251,7 @@
             <div class="card-body p-0">
               <div class="map-placeholder bg-light d-flex align-items-center justify-content-center"
                 style="height: 400px;">
-                <div class="text-center">
-                  <i class="fas fa-map-marked-alt fa-4x text-muted mb-3"></i>
-                  <h5 class="text-muted">Bản đồ thư viện</h5>
-                  <p class="text-muted">123 Đường ABC, Quận 1, TP.HCM</p>
-                </div>
+                <img src="/images/map.jpg" alt="địa chỉ thư viện" class="img-fluid" style="height: 400px; width: 100%;;">
               </div>
             </div>
           </div>
@@ -263,6 +260,16 @@
     </div>
   </div>
 </template>
+
+<style scoped>
+.contact-cta-section {
+  background: linear-gradient(90deg, #0d6efd 60%, #2563eb 100%);
+}
+.contact-cta-section .btn {
+  min-width: 220px;
+  font-size: 1.1rem;
+}
+</style>
 
 <script>
 import { ref } from 'vue'
