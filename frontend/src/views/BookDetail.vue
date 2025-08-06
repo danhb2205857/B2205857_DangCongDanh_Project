@@ -13,7 +13,7 @@
       <div class="col-md-4 mb-4">
         <div class="book-image-container">
           <img 
-            :src="getBookImage(book)" 
+            src="/images/dacnhantam.jpg" 
             :alt="book.TenSach"
             class="img-fluid book-detail-image"
             @error="handleImageError"
@@ -167,7 +167,7 @@ export default {
     const loadBook = async () => {
       loading.value = true
       try {
-        const response = await axios.get(`/api/sach/${route.params.id}`)
+        const response = await axios.get(`/sach/${route.params.id}`)
         book.value = response.data.data
         
         // Load related books (same publisher)
@@ -184,7 +184,7 @@ export default {
 
     const loadRelatedBooks = async () => {
       try {
-        const response = await axios.get('/api/sach', {
+        const response = await axios.get('/sach', {
           params: {
             MaNhaXuatBan: book.value.MaNhaXuatBan,
             limit: 6

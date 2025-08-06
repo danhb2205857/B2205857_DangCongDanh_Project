@@ -101,7 +101,7 @@
             <div class="card h-100 shadow-sm border-0 book-card" @click="viewBook(book.MaSach)">
               <div class="position-relative">
                 <img 
-                  :src="getBookImage(book)" 
+                  src="/images/dacnhantam.jpg" 
                   class="card-img-top book-thumb"
                   :alt="book.TenSach"
                   @error="handleImageError"
@@ -327,9 +327,9 @@ export default {
           params.available = false
         }
 
-        const response = await axios.get('/api/sach', { params })
-        books.value = response.data.data.sach || []
-        pagination.value = response.data.data.pagination || pagination.value
+        const response = await axios.get('/sach', { params })
+        books.value = response.data.data || []
+        pagination.value = response.data.pagination || pagination.value
       } catch (error) {
         console.error('Error loading books:', error)
         books.value = []

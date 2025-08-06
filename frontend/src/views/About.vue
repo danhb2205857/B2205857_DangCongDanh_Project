@@ -217,35 +217,13 @@ export default {
       totalBorrows: 0
     })
 
-    const teamMembers = ref([
-      {
-        id: 1,
-        name: 'Nguyễn Văn An',
-        position: 'Giám đốc thư viện',
-        description: 'Hơn 15 năm kinh nghiệm trong lĩnh vực thư viện học',
-        avatar: null
-      },
-      {
-        id: 2,
-        name: 'Trần Thị Bình',
-        position: 'Trưởng phòng dịch vụ',
-        description: 'Chuyên gia về hệ thống quản lý thư viện số',
-        avatar: null
-      },
-      {
-        id: 3,
-        name: 'Lê Minh Cường',
-        position: 'Thủ thư trưởng',
-        description: 'Phụ trách kho sách và dịch vụ mượn trả',
-        avatar: null
-      }
-    ])
+    const teamMembers = ref([])
 
     const loadStats = async () => {
       try {
         const [booksRes, membersRes] = await Promise.all([
-          axios.get('/api/sach?limit=1').catch(() => ({ data: { data: { pagination: { total: 0 } } } })),
-          axios.get('/api/docgia?limit=1').catch(() => ({ data: { data: { pagination: { total: 0 } } } }))
+          axios.get('sach?limit=1').catch(() => ({ data: { data: { pagination: { total: 0 } } } })),
+          axios.get('docgia?limit=1').catch(() => ({ data: { data: { pagination: { total: 0 } } } }))
         ])
 
         stats.value = {
@@ -264,8 +242,40 @@ export default {
       }
     }
 
+
+    const loadTeamMembers = async () => {
+      try {
+        const res = await axios.get('nhanvien', {
+          params: {
+            sortBy: 'NgayVaoLam',
+            sortOrder: 'asc',
+            limit: 3
+          }
+        })
+        // Debug cấu trúc dữ liệu trả về
+        console.log('NhanVien API res.data:', res.data);
+        console.log('NhanVien API res.data.data:', res.data.data);
+        let arr = [];
+        if (Array.isArray(res.data.data)) {
+          arr = res.data.data;
+        } else if (res.data.data && Array.isArray(res.data.data.nhanviens)) {
+          arr = res.data.data.nhanviens;
+        }
+        teamMembers.value = arr.map((nv, idx) => ({
+          id: nv.MSNV || idx,
+          name: nv.HoTenNV,
+          position: nv.ChucVu,
+          description: nv.DiaChi || '',
+          avatar: nv.avatar || null
+        }))
+      } catch (error) {
+        console.error('Không thể tải danh sách nhân viên:', error)
+      }
+    }
+
     onMounted(() => {
       loadStats()
+      loadTeamMembers()
     })
 
     return {

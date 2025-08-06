@@ -68,7 +68,7 @@
                                     <h5 class="card-title mb-1">{{ category.TenNhaXuatBan }}</h5>
                                     <small class="text-muted">
                                         <i class="fas fa-book-open me-1"></i>
-                                        {{ category.bookCount || 0 }} sách
+                                        {{ category.SoSach || 0 }} sách
                                     </small>
                                 </div>
                             </div>
@@ -111,7 +111,7 @@
                 <div v-for="book in newBooks.slice(0, 8)" :key="book.MaSach" class="col-6 col-sm-4 col-md-3 col-lg-2">
                     <div class="card h-100 shadow-sm border-0 book-card" @click="viewBook(book.MaSach)">
                         <div class="position-relative">
-                            <img :src="getBookImage(book)" class="card-img-top book-thumb" :alt="book.TenSach">
+                            <img src="/images/dacnhantam.jpg" class="card-img-top book-thumb" :alt="book.TenSach">
                             <div class="position-absolute top-0 end-0 m-2">
                                 <span class="badge bg-success">Mới</span>
                             </div>
@@ -176,7 +176,7 @@ export default {
         const loadNewBooks = async () => {
             try {
                 const response = await axios.get('/sach?limit=8&sortBy=createdAt&sortOrder=desc')
-                newBooks.value = response.data.data.sach || []
+                newBooks.value = response.data.data || []
             } catch (error) {
                 console.error('Error loading new books:', error)
             }

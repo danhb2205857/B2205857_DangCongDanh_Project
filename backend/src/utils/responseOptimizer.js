@@ -233,8 +233,10 @@ export const createOptimizedResponse = (res, data, options = {}) => {
 /**
  * Generate simple ETag for response caching
  */
+
+import crypto from 'crypto';
 const generateETag = (data) => {
-  const hash = require('crypto')
+  const hash = crypto
     .createHash('md5')
     .update(JSON.stringify(data))
     .digest('hex');
