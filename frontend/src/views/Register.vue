@@ -25,21 +25,8 @@
                 <!-- Form cho Độc giả -->
                 <div v-if="registerType === 'reader'">
                   <div class="row">
-                    <!-- Mã độc giả -->
-                    <div class="col-md-6 mb-3">
-                      <label for="maDocGia" class="form-label">Mã độc giả <span class="text-danger">*</span></label>
-                      <div class="input-group">
-                        <span class="input-group-text">
-                          <i class="fas fa-id-card"></i>
-                        </span>
-                        <input v-model="form.MaDocGia" type="text" class="form-control" id="maDocGia"
-                          placeholder="DG001" pattern="^DG\d{3,}$"
-                          title="Mã độc giả phải có định dạng DG001, DG002, ..." required :disabled="loading">
-                      </div>
-                    </div>
-
                     <!-- Email -->
-                    <div class="col-md-6 mb-3">
+                    <div class="col-md-12 mb-3">
                       <label for="email" class="form-label">Email <span class="text-danger">*</span></label>
                       <div class="input-group">
                         <span class="input-group-text">
@@ -48,6 +35,7 @@
                         <input v-model="form.email" type="email" class="form-control" id="email"
                           placeholder="example@email.com" required :disabled="loading">
                       </div>
+                      <small class="text-muted">Mã độc giả sẽ được tự động tạo khi đăng ký</small>
                     </div>
                   </div>
                 </div>
@@ -55,21 +43,8 @@
                 <!-- Form cho Nhân viên -->
                 <div v-if="registerType === 'staff'">
                   <div class="row">
-                    <!-- Mã nhân viên -->
-                    <div class="col-md-6 mb-3">
-                      <label for="msnv" class="form-label">Mã nhân viên <span class="text-danger">*</span></label>
-                      <div class="input-group">
-                        <span class="input-group-text">
-                          <i class="fas fa-id-badge"></i>
-                        </span>
-                        <input v-model="form.username" type="text" class="form-control" id="msnv" placeholder="NV001"
-                          pattern="^NV\d{3,}$" title="Mã nhân viên phải có định dạng NV001, NV002, ..." required
-                          :disabled="loading">
-                      </div>
-                    </div>
-
                     <!-- Email -->
-                    <div class="col-md-6 mb-3">
+                    <div class="col-md-12 mb-3">
                       <label for="staffEmail" class="form-label">Email</label>
                       <div class="input-group">
                         <span class="input-group-text">
@@ -78,6 +53,7 @@
                         <input v-model="form.email" type="email" class="form-control" id="staffEmail"
                           placeholder="nhanvien@email.com" :disabled="loading">
                       </div>
+                      <small class="text-muted">Mã nhân viên sẽ được tự động tạo khi đăng ký</small>
                     </div>
                   </div>
                 </div>
@@ -301,14 +277,12 @@ export default {
       acceptTerms: false,
 
       // Reader fields
-      MaDocGia: '',
       HoLot: '',
       Ten: '',
       Phai: '',
       DienThoai: '',
 
       // Staff fields
-      username: '',
       fullName: '',
       phone: '',
       chucVu: ''
@@ -353,9 +327,8 @@ export default {
         let result
 
         if (registerType.value === 'reader') {
-          // Đăng ký độc giả
+          // Đăng ký độc giả - không cần gửi MaDocGia, backend sẽ tự tạo
           const userData = {
-            MaDocGia: form.value.MaDocGia,
             email: form.value.email,
             HoLot: form.value.HoLot,
             Ten: form.value.Ten,
@@ -367,9 +340,8 @@ export default {
           }
           result = await register(userData)
         } else {
-          // Đăng ký nhân viên - sử dụng API auth/register
+          // Đăng ký nhân viên - không cần gửi username, backend sẽ tự tạo MSNV
           const staffData = {
-            username: form.value.username,
             fullName: form.value.fullName,
             password: form.value.password,
             email: form.value.email,
@@ -379,7 +351,7 @@ export default {
           }
 
           // Call staff registration API directly
-          const response = await fetch('/api/auth/register', {
+          const response = await fetch('/auth/register', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'

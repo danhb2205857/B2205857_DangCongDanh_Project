@@ -68,6 +68,14 @@ export default {
   async getAll(req, res) {
     console.log("=== Starting TheoDoiMuonSach getAll function ===");
 
+    // Update overdue books first
+    try {
+      await TheoDoiMuonSach.updateOverdueBooks();
+      console.log("✅ Updated overdue books status and penalties");
+    } catch (error) {
+      console.error("⚠️ Error updating overdue books:", error);
+    }
+
     // Parse and validate query parameters
     const page = Math.max(1, parseInt(req.query.page) || 1);
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 10));
@@ -555,4 +563,90 @@ export default {
 
     console.log("Get book borrow history operation completed successfully");
   },
+
+  /**
+   * POST /api/theodoimuonsach/update-overdue - Cập nhật sách quá hạn thủ công
+   */
+  async updateOverdue(req, res) {
+    console.log('Manually updating overdue books...');
+    
+    try {
+      const result = await TheoDoiMuonSach.updateOverdueBooks();
+      
+      res.json({
+        success: true,
+        message: 'Cập nhật sách quá hạn thành công',
+        data: {
+          updatedCount: result.updatedCount,
+          totalOverdue: result.overdueBooks
+        }
+      });
+      
+    } catch (error) {
+      console.error('Error updating overdue books:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Lỗi hệ thống khi cập nhật sách quá hạn',
+        error: 'UPDATE_OVERDUE_ERROR'
+      });
+    }
+  },
+
+  /**
+   * GET /api/theodoimuonsach/test-overdue - Test hệ thống quá hạn
+   */
+  async testOverdue(req, res) {
+    console.log('Testing overdue system...');
+    
+    try {
+      // Get current overdue books
+      const overdueBooks = await TheoDoiMuonSach.find({
+        TrangThai: 'Quá hạn'
+      }).populate('MaDocGia', 'HoTen').populate('MaSach', 'TenSach');
+
+      // Get books with penalties
+      const booksWithPenalties = await TheoDoiMuonSach.find({
+        PhiPhat: { $gt: 0 }
+      }).populate('MaDocGia', 'HoTen').populate('MaSach', 'TenSach');
+
+      // Update overdue books
+      const updateResult = await TheoDoiMuonSach.updateOverdueBooks();
+
+      res.json({
+        success: true,
+        message: 'Test hệ thống quá hạn thành công',
+        data: {
+          currentOverdueBooks: overdueBooks.length,
+          booksWithPenalties: booksWithPenalties.length,
+          updateResult: {
+            updatedCount: updateResult.updatedCount,
+            totalOverdue: updateResult.overdueBooks
+          },
+          overdueDetails: overdueBooks.map(book => ({
+            id: book.MaTheoDoiMuonSach,
+            book: book.MaSach?.TenSach || 'N/A',
+            reader: book.MaDocGia?.HoTen || 'N/A',
+            dueDate: book.NgayHenTra,
+            penalty: book.PhiPhat || 0,
+            status: book.TrangThai
+          })),
+          penaltyDetails: booksWithPenalties.map(book => ({
+            id: book.MaTheoDoiMuonSach,
+            book: book.MaSach?.TenSach || 'N/A',
+            reader: book.MaDocGia?.HoTen || 'N/A',
+            penalty: book.PhiPhat,
+            overdueDays: Math.max(0, Math.ceil((new Date() - new Date(book.NgayHenTra)) / (1000 * 60 * 60 * 24)))
+          }))
+        }
+      });
+      
+    } catch (error) {
+      console.error('Error testing overdue system:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Lỗi hệ thống khi test quá hạn',
+        error: 'TEST_OVERDUE_ERROR'
+      });
+    }
+  }
 };

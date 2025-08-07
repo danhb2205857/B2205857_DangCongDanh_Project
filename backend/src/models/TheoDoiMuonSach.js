@@ -58,6 +58,17 @@ const theoDoiMuonSachSchema = new mongoose.Schema({
   NhanVienTra: {
     type: String,
     ref: 'NhanVien'
+  },
+  PhiPhat: {
+    type: Number,
+    default: 0,
+    min: [0, 'Phí phạt không được âm'],
+    validate: {
+      validator: function(value) {
+        return Number.isInteger(value) || value % 1 === 0;
+      },
+      message: 'Phí phạt phải là số nguyên'
+    }
   }
 }, {
   timestamps: true,
@@ -81,22 +92,50 @@ theoDoiMuonSachSchema.virtual('SoNgayMuon').get(function() {
 
 // Virtual for days overdue
 theoDoiMuonSachSchema.virtual('SoNgayQuaHan').get(function() {
-  if (this.TrangThai === 'Đã trả') return 0;
+  if (this.TrangThai === 'Đã trả') {
+    // Nếu đã trả, tính số ngày quá hạn từ ngày hẹn trả đến ngày trả
+    if (this.NgayTra && this.NgayTra > this.NgayHenTra) {
+      const diffTime = Math.abs(this.NgayTra - this.NgayHenTra);
+      return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    }
+    return 0;
+  }
+  
   const today = new Date();
   if (today <= this.NgayHenTra) return 0;
   const diffTime = Math.abs(today - this.NgayHenTra);
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 });
 
-// Pre-save middleware to update status
+// Method to calculate penalty fee
+theoDoiMuonSachSchema.methods.calculatePenaltyFee = function() {
+  const overdueDays = this.SoNgayQuaHan;
+  return overdueDays * 2000; // 2000 VND per day
+};
+
+// Pre-save middleware to update status and penalty fee
 theoDoiMuonSachSchema.pre('save', function(next) {
+  const today = new Date();
+  
   if (this.NgayTra) {
     this.TrangThai = 'Đã trả';
-  } else if (new Date() > this.NgayHenTra) {
+    // Tính phí phạt nếu trả muộn
+    if (this.NgayTra > this.NgayHenTra) {
+      const overdueDays = Math.ceil((this.NgayTra - this.NgayHenTra) / (1000 * 60 * 60 * 24));
+      this.PhiPhat = overdueDays * 2000;
+    } else {
+      this.PhiPhat = 0;
+    }
+  } else if (today > this.NgayHenTra) {
     this.TrangThai = 'Quá hạn';
+    // Tính phí phạt cho sách chưa trả
+    const overdueDays = Math.ceil((today - this.NgayHenTra) / (1000 * 60 * 60 * 24));
+    this.PhiPhat = overdueDays * 2000;
   } else {
     this.TrangThai = 'Đang mượn';
+    this.PhiPhat = 0;
   }
+  
   next();
 });
 
@@ -139,6 +178,33 @@ theoDoiMuonSachSchema.methods.extendDueDate = function(newDueDate, ghiChu) {
   this.NgayHenTra = newDueDate;
   if (ghiChu) this.GhiChu = ghiChu;
   return this.save();
+};
+
+// Static method to update overdue books
+theoDoiMuonSachSchema.statics.updateOverdueBooks = async function() {
+  const today = new Date();
+  
+  // Find all books that are not returned and past due date
+  const overdueBooks = await this.find({
+    TrangThai: { $in: ['Đang mượn', 'Quá hạn'] },
+    NgayTra: null,
+    NgayHenTra: { $lt: today }
+  });
+
+  let updatedCount = 0;
+  
+  for (const book of overdueBooks) {
+    const overdueDays = Math.ceil((today - book.NgayHenTra) / (1000 * 60 * 60 * 24));
+    book.TrangThai = 'Quá hạn';
+    book.PhiPhat = overdueDays * 2000;
+    await book.save();
+    updatedCount++;
+  }
+
+  return {
+    updatedCount,
+    overdueBooks: overdueBooks.length
+  };
 };
 
 export default mongoose.model('TheoDoiMuonSach', theoDoiMuonSachSchema);

@@ -37,6 +37,7 @@
                 </select>
               </div>
               <div class="col-md-3 text-end">
+                
                 <button class="btn btn-primary" @click="showBorrowModal">
                   <i class="bi bi-plus-circle me-2"></i>Mượn sách
                 </button>
@@ -488,6 +489,7 @@ const loading = ref(false)
 const borrowing = ref(false)
 const returning = ref(false)
 const extending = ref(false)
+const testingOverdue = ref(false)
 const searchQuery = ref('')
 const statusFilter = ref('')
 const currentPage = ref(1)
@@ -963,6 +965,53 @@ const showExtendModalFromDetails = () => {
   const record = viewingRecord.value
   closeDetailsModal()
   showExtendModal(record)
+}
+
+// Test overdue system
+const testOverdueSystem = async () => {
+  testingOverdue.value = true
+  
+  try {
+    console.log('🧪 Testing overdue system...')
+    
+    // Call test API
+    const response = await api.get('/theodoimuonsach/test-overdue')
+    
+    if (response.data.success) {
+      const data = response.data.data
+      
+      // Show results in console
+      console.log('✅ Test results:', data)
+      
+      // Show alert with summary
+      alert(`🎯 Test kết quả hệ thống quá hạn:
+      
+📊 Tổng quan:
+• Sách quá hạn hiện tại: ${data.currentOverdueBooks}
+• Sách có phí phạt: ${data.booksWithPenalties}
+• Đã cập nhật: ${data.updateResult.updatedCount} bản ghi
+• Tổng sách quá hạn sau cập nhật: ${data.updateResult.totalOverdue}
+
+💰 Chi tiết phí phạt:
+${data.penaltyDetails.map(item => 
+  `• ${item.book} - ${item.reader}: ${item.penalty.toLocaleString()} ₫ (${item.overdueDays} ngày)`
+).join('\n')}
+
+✅ Hệ thống hoạt động bình thường!`)
+      
+      // Reload data to show updated results
+      await loadRecords()
+      
+    } else {
+      alert('❌ Lỗi khi test hệ thống: ' + response.data.message)
+    }
+    
+  } catch (error) {
+    console.error('Error testing overdue system:', error)
+    alert('❌ Lỗi khi test hệ thống quá hạn: ' + error.message)
+  } finally {
+    testingOverdue.value = false
+  }
 }
 
 // Watch for search changes

@@ -87,8 +87,11 @@ export const validate = (schema) => {
       for (const [field, rules] of Object.entries(schema)) {
         const value = req.body[field];
         
+        console.log(`Validating field: ${field}, value: ${value}, required: ${rules.required}`);
+        
         // Check required
         if (rules.required && (!value || (typeof value === 'string' && value.trim() === ''))) {
+          console.log(`Field ${field} is required but missing or empty`);
           errors.push(`${rules.label || field} là bắt buộc`);
           continue;
         }

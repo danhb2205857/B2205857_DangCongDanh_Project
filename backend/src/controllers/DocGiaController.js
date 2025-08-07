@@ -276,20 +276,12 @@ export default {
   async register(req, res) {
     console.log('Registering new DocGia account:', req.body.email);
     
-    const { email, password, MaDocGia, HoLot, Ten, NgaySinh, Phai, DiaChi, DienThoai, avatar } = req.body;
+    const { email, password, HoLot, Ten, NgaySinh, Phai, DiaChi, DienThoai, avatar } = req.body;
     
     // Check if email already exists
     const existingEmail = await DocGia.findOne({ email: email.toLowerCase() });
     if (existingEmail) {
       throw new AppError('Email đã được sử dụng', 400, 'DUPLICATE_EMAIL');
-    }
-    
-    // Check if MaDocGia already exists
-    if (MaDocGia) {
-      const existingDocGia = await DocGia.findOne({ MaDocGia });
-      if (existingDocGia) {
-        throw new AppError('Mã độc giả đã tồn tại', 400, 'DUPLICATE_MA_DOCGIA');
-      }
     }
     
     // Check if DienThoai already exists
@@ -299,6 +291,16 @@ export default {
         throw new AppError('Số điện thoại đã được sử dụng', 400, 'DUPLICATE_PHONE');
       }
     }
+    
+    // Auto-generate MaDocGia
+    const lastDocGia = await DocGia.findOne({}, {}, { sort: { 'MaDocGia': -1 } });
+    let nextNumber = 1;
+    if (lastDocGia && lastDocGia.MaDocGia && lastDocGia.MaDocGia.match(/^DG(\d+)$/)) {
+      nextNumber = parseInt(lastDocGia.MaDocGia.substring(2)) + 1;
+    }
+    const MaDocGia = `DG${nextNumber.toString().padStart(3, '0')}`;
+    
+    console.log('Generated MaDocGia:', MaDocGia);
     
     // Create new reader account
     const docGia = new DocGia({

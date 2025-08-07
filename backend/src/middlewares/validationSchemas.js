@@ -461,13 +461,6 @@ export const returnBookSchema = {
 
 // Register validation schema
 export const registerSchema = {
-  username: {
-    required: true,
-    type: 'string',
-    minLength: 3,
-    maxLength: 50,
-    label: 'Tên đăng nhập'
-  },
   fullName: {
     required: true,
     type: 'string',
@@ -480,16 +473,7 @@ export const registerSchema = {
     type: 'string',
     minLength: 6,
     maxLength: 50,
-    label: 'Mật khẩu',
-    custom: (value) => {
-      if (!/[a-zA-Z]/.test(value)) {
-        return 'Mật khẩu phải chứa ít nhất một chữ cái';
-      }
-      if (!/\d/.test(value)) {
-        return 'Mật khẩu phải chứa ít nhất một số';
-      }
-      return null;
-    }
+    label: 'Mật khẩu'
   },
   email: {
     required: false,
