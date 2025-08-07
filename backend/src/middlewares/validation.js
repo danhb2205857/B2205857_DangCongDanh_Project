@@ -1,6 +1,3 @@
-/**
- * Request validation middleware
- */
 import { FormValidator, VALIDATION_MESSAGES } from '../utils/validation.js';
 import { AppError } from './errorHandler.js';
 import {
@@ -17,9 +14,7 @@ import {
   registerSchema
 } from './validationSchemas.js';
 
-/**
- * Validate login request
- */
+
 export const validateLogin = (req, _res, next) => {
   const { msnv, password } = req.body;
   
@@ -29,21 +24,19 @@ export const validateLogin = (req, _res, next) => {
     .required(msnv, 'MSNV')
     .required(password, 'Password')
     .length(msnv, 'MSNV', 1, 20)
-    .length(password, 'Password', 1, 100); // Chỉ kiểm tra độ dài, không kiểm tra độ mạnh
+    .length(password, 'Password', 1, 100); 
 
   if (!validator.isValid()) {
     throw new AppError('Dữ liệu đầu vào không hợp lệ', 400, 'VALIDATION_ERROR');
   }
 
-  // Normalize MSNV
+  
   req.body.msnv = msnv.trim().toUpperCase();
   
   next();
 };
 
-/**
- * Validate change password request
- */
+
 export const validateChangePassword = (req, _res, next) => {
   const { currentPassword, newPassword, confirmPassword } = req.body;
   
@@ -69,15 +62,13 @@ export const validateChangePassword = (req, _res, next) => {
   next();
 };
 
-/**
- * Generic validation middleware factory
- */
+
 export const validate = (schema) => {
   return (req, _res, next) => {
     try {
       const errors = [];
       
-      // Debug log
+      
       console.log('Validation middleware - req.body:', req.body);
       
       if (!req.body) {
@@ -89,19 +80,19 @@ export const validate = (schema) => {
         
         console.log(`Validating field: ${field}, value: ${value}, required: ${rules.required}`);
         
-        // Check required
+        
         if (rules.required && (!value || (typeof value === 'string' && value.trim() === ''))) {
           console.log(`Field ${field} is required but missing or empty`);
           errors.push(`${rules.label || field} là bắt buộc`);
           continue;
         }
         
-        // Skip other validations if field is not required and empty
+        
         if (!rules.required && (!value || (typeof value === 'string' && value.trim() === ''))) {
           continue;
         }
         
-        // Check type for numbers
+        
         if (rules.type === 'number') {
           const num = Number(value);
           if (isNaN(num)) {
@@ -109,7 +100,7 @@ export const validate = (schema) => {
             continue;
           }
           
-          // Check min/max for numbers
+          
           if (rules.min !== undefined && num < rules.min) {
             errors.push(`${rules.label || field} phải lớn hơn hoặc bằng ${rules.min}`);
           }
@@ -118,13 +109,13 @@ export const validate = (schema) => {
           }
         }
         
-        // Check type for strings
+        
         if (rules.type === 'string' && typeof value !== 'string') {
           errors.push(`${rules.label || field} phải là chuỗi ký tự`);
           continue;
         }
         
-        // Check min/max length for strings
+
         if (typeof value === 'string') {
           if (rules.minLength && value.trim().length < rules.minLength) {
             errors.push(`${rules.label || field} phải có ít nhất ${rules.minLength} ký tự`);
@@ -134,17 +125,17 @@ export const validate = (schema) => {
           }
         }
         
-        // Check pattern
+          
         if (rules.pattern && typeof value === 'string' && !rules.pattern.test(value.trim())) {
           errors.push(rules.patternMessage || `${rules.label || field} không đúng định dạng`);
         }
         
-        // Check enum values
+        
         if (rules.enum && !rules.enum.includes(value)) {
           errors.push(`${rules.label || field} phải là một trong: ${rules.enum.join(', ')}`);
         }
         
-        // Custom validation
+        
         if (rules.custom) {
           const customError = rules.custom(value, req.body);
           if (customError) {
@@ -164,7 +155,7 @@ export const validate = (schema) => {
   };
 };
 
-// Specific validation middlewares for each model
+
 export const validateSach = validate(sachSchema);
 export const validateSachUpdate = validate(sachUpdateSchema);
 export const validateDocGia = validate(docGiaSchema);
@@ -177,9 +168,7 @@ export const validateTheoDoiMuonSach = validate(theoDoiMuonSachSchema);
 export const validateReturnBook = validate(returnBookSchema);
 export const validateRegister = validate(registerSchema);
 
-/**
- * Validate ID parameter in URL
- */
+
 export const validateId = (paramName = 'id', pattern = null, label = 'ID') => {
   return (req, _res, next) => {
     try {
@@ -200,9 +189,7 @@ export const validateId = (paramName = 'id', pattern = null, label = 'ID') => {
   };
 };
 
-/**
- * Validate pagination parameters
- */
+    
 export const validatePagination = (req, _res, next) => {
   try {
     const { page = 1, limit = 10 } = req.query;

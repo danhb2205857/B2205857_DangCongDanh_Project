@@ -1,16 +1,12 @@
 import { DocGia, Sach, NhaXuatBan, TheoDoiMuonSach, NhanVien } from '../models/index.js';
 import { AppError } from '../middlewares/errorHandler.js';
 
-/**
- * Dashboard Controller - Thống kê tổng quan
- */
+
 
 export default {
-  /**
-   * GET /api/dashboard/stats - Lấy thống kê tổng quan
-   */
+  
   async getStats(req, res) {
-      // Get basic counts
+
       const [
         totalReaders,
         totalBooks,
@@ -30,7 +26,7 @@ export default {
         })
       ]);
 
-      // Get today's statistics
+      
       const today = new Date();
       const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
       const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
@@ -51,7 +47,7 @@ export default {
         })
       ]);
 
-      // Get book availability stats
+      
       const bookStats = await Sach.aggregate([
         {
           $group: {
@@ -102,29 +98,22 @@ export default {
 
   },
 
-  /**
-   * GET /api/dashboard/recent-activities - Lấy hoạt động gần đây
-   */
+  
   async getRecentActivities(req, res) {
       const limit = Math.min(20, Math.max(1, parseInt(req.query.limit) || 10));
 
-      // Get recent borrows and returns (fix: skip populate if ref is not ObjectId)
+      
       let recentTransactions = await TheoDoiMuonSach.find()
         .sort({ updatedAt: -1 })
         .limit(limit)
         .lean();
-
-      // If MaDocGia, MaSach, NhanVienMuon, NhanVienTra are ObjectId, populate; else, leave as is
-      // This code assumes MaDocGia, MaSach, NhanVienMuon, NhanVienTra are string (not ObjectId), so skip populate
-      // If you want to support both, you can check type and populate only if ObjectId
-
-      // Get recent new readers (fix: avoid aggregation on string _id)
+      
       const recentReaders = await DocGia.find({})
         .select('MaDocGia HoLot Ten createdAt')
         .sort({ createdAt: -1 })
         .limit(5);
 
-      // Get recent new books
+      
       const recentBooks = await Sach.find()
         .select('MaSach TenSach NguonGoc NamXuatBan createdAt')
         .sort({ createdAt: -1 })
@@ -142,9 +131,7 @@ export default {
 
   },
 
-  /**
-   * GET /api/dashboard/charts - Lấy dữ liệu cho biểu đồ
-   */
+  
   async getChartData(req, res) {
       const { period = '7days' } = req.query;
       
@@ -165,7 +152,7 @@ export default {
           groupFormat = { $dateToString: { format: '%Y-%m-%d', date: '$NgayMuon' } };
       }
 
-      // Borrow/Return trends
+      
       const borrowTrends = await TheoDoiMuonSach.aggregate([
         { $match: { NgayMuon: { $gte: startDate } } },
         {
@@ -182,7 +169,7 @@ export default {
         { $sort: { _id: 1 } }
       ]);
 
-      // Popular books
+      
       const popularBooks = await TheoDoiMuonSach.aggregate([
         { $match: { NgayMuon: { $gte: startDate } } },
         {
@@ -210,7 +197,7 @@ export default {
         }
       ]);
 
-      // Reader activity
+      
       const readerActivity = await TheoDoiMuonSach.aggregate([
         { $match: { NgayMuon: { $gte: startDate } } },
         {

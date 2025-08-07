@@ -2,21 +2,18 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import { NhanVien } from '../src/models/index.js';
 
-// Load environment variables
+
 dotenv.config();
 
 const createAdmin = async () => {
   try {
-    // Connect to MongoDB
     await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/quanlythuvien');
     console.log('Connected to MongoDB');
 
-    // Check if admin already exists
     const existingAdmin = await NhanVien.findOne({ MSNV: 'NV001' });
     if (existingAdmin) {
       console.log('Admin account already exists:', existingAdmin.MSNV);
       
-      // Update to ensure full permissions and activation
       existingAdmin.Quyen = ["doc_gia", "sach", "nha_xuat_ban", "muon_tra", "thong_ke", "quan_ly"];
       existingAdmin.isActivate = 1;
       existingAdmin.ChucVu = "Quản lý thư viện";
@@ -26,7 +23,6 @@ const createAdmin = async () => {
       process.exit(0);
     }
 
-    // Create new admin account
     const adminData = {
       MSNV: 'NV001',
       HoTenNV: 'Quản trị viên hệ thống',

@@ -1,11 +1,6 @@
 import config from '../config.js';
 
-/**
- * Error handling middleware
- * Handles all errors and sends appropriate responses
- */
 
-// Custom error class
 export class AppError extends Error {
   constructor(message, statusCode, errorCode = null) {
     super(message);
@@ -17,13 +12,13 @@ export class AppError extends Error {
   }
 }
 
-// MongoDB/Mongoose error handler
+
 const handleMongoError = (error) => {
   let message = 'Lỗi cơ sở dữ liệu';
   let statusCode = 500;
   let errorCode = 'DATABASE_ERROR';
 
-  // Duplicate key error
+  
   if (error.code === 11000) {
     const field = Object.keys(error.keyValue)[0];
     const value = error.keyValue[field];
@@ -32,7 +27,7 @@ const handleMongoError = (error) => {
     errorCode = 'DUPLICATE_FIELD';
   }
 
-  // Validation error
+  
   if (error.name === 'ValidationError') {
     const errors = Object.values(error.errors).map(err => err.message);
     message = errors.join(', ');
@@ -40,7 +35,7 @@ const handleMongoError = (error) => {
     errorCode = 'VALIDATION_ERROR';
   }
 
-  // Cast error (invalid ObjectId)
+  
   if (error.name === 'CastError') {
     message = `ID không hợp lệ: ${error.value}`;
     statusCode = 400;
@@ -50,7 +45,7 @@ const handleMongoError = (error) => {
   return new AppError(message, statusCode, errorCode);
 };
 
-// JWT error handler
+
 const handleJWTError = (error) => {
   let message = 'Token không hợp lệ';
   let statusCode = 401;
@@ -69,7 +64,7 @@ const handleJWTError = (error) => {
   return new AppError(message, statusCode, errorCode);
 };
 
-// Send error response in development
+
 const sendErrorDev = (err, res) => {
   res.status(err.statusCode).json({
     success: false,
@@ -80,9 +75,9 @@ const sendErrorDev = (err, res) => {
   });
 };
 
-// Send error response in production
+
 const sendErrorProd = (err, res) => {
-  // Operational, trusted error: send message to client
+  
   if (err.isOperational) {
     res.status(err.statusCode).json({
       success: false,
@@ -90,7 +85,7 @@ const sendErrorProd = (err, res) => {
       error: err.errorCode || 'INTERNAL_ERROR'
     });
   } else {
-    // Programming or other unknown error: don't leak error details
+    
     console.error('ERROR 💥', err);
     
     res.status(500).json({
@@ -101,7 +96,7 @@ const sendErrorProd = (err, res) => {
   }
 };
 
-// Main error handling middleware
+
 export const errorHandler = (err, req, res, next) => {
   err.statusCode = err.statusCode || 500;
   
@@ -111,7 +106,7 @@ export const errorHandler = (err, req, res, next) => {
     let error = { ...err };
     error.message = err.message;
 
-    // Handle specific error types
+    
     if (error.name === 'CastError' || error.name === 'ValidationError' || error.code === 11000) {
       error = handleMongoError(error);
     }
@@ -124,20 +119,20 @@ export const errorHandler = (err, req, res, next) => {
   }
 };
 
-// Async error wrapper
+
 export const catchAsync = (fn) => {
   return (req, res, next) => {
     fn(req, res, next).catch(next);
   };
 };
 
-// 404 handler
+
 export const notFound = (req, res, next) => {
   const err = new AppError(`Không tìm thấy ${req.originalUrl}`, 404, 'NOT_FOUND');
   next(err);
 };
 
-// Unhandled promise rejection handler
+
 export const handleUnhandledRejection = () => {
   process.on('unhandledRejection', (err, promise) => {
     console.log('UNHANDLED PROMISE REJECTION! 💥 Shutting down...');
@@ -146,7 +141,7 @@ export const handleUnhandledRejection = () => {
   });
 };
 
-// Uncaught exception handler
+      
 export const handleUncaughtException = () => {
   process.on('uncaughtException', (err) => {
     console.log('UNCAUGHT EXCEPTION! 💥 Shutting down...');

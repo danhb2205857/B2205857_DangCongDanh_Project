@@ -2,10 +2,8 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import { NhanVien } from '../src/models/index.js';
 
-// Load environment variables
 dotenv.config();
 
-// Staff accounts to create
 const staffAccounts = [
   {
     MSNV: 'NV002',
@@ -47,32 +45,29 @@ const staffAccounts = [
     NgayVaoLam: new Date(),
     TrangThai: 'Đang làm việc',
     Quyen: ["doc_gia"],
-    isActivate: 0 // Chưa kích hoạt để test
+    isActivate: 0
   }
 ];
 
 const createStaff = async () => {
   try {
-    // Connect to MongoDB
+
     await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/quanlythuvien');
     console.log('Connected to MongoDB');
 
     console.log('🔄 Creating staff accounts...\n');
 
     for (const staffData of staffAccounts) {
-      // Check if staff already exists
       const existingStaff = await NhanVien.findOne({ MSNV: staffData.MSNV });
       
       if (existingStaff) {
         console.log(`⚠️  Staff account ${staffData.MSNV} already exists`);
         
-        // Update to ensure activation status matches
         existingStaff.isActivate = staffData.isActivate;
         await existingStaff.save();
         
         console.log(`   Updated activation status: ${staffData.isActivate === 1 ? 'Activated' : 'Deactivated'}`);
       } else {
-        // Create new staff account
         const staff = new NhanVien(staffData);
         await staff.save();
 
@@ -83,7 +78,7 @@ const createStaff = async () => {
         console.log(`   Password: ${staffData.Password}`);
         console.log(`   Status: ${staffData.isActivate === 1 ? 'Activated' : 'Deactivated'}`);
       }
-      console.log(''); // Empty line for readability
+      console.log('');
     }
 
     console.log('📋 Summary of all staff accounts:');

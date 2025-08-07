@@ -4,10 +4,6 @@ import Sach from "../models/Sach.js";
 import NhanVien from "../models/NhanVien.js";
 import { AppError } from "../middlewares/errorHandler.js";
 
-/**
- * TheoDoiMuonSach Controller - Quản lý mượn trả sách
- */
-
 
 function buildSearchQuery(search) {
   console.log("Building TheoDoiMuonSach search query for:", search);
@@ -62,13 +58,11 @@ async function generateNextId() {
 }
 
 export default {
-  /**
-   * GET /api/theodoimuonsach - Lấy danh sách theo dõi mượn sách
-   */
+  
   async getAll(req, res) {
     console.log("=== Starting TheoDoiMuonSach getAll function ===");
 
-    // Update overdue books first
+    
     try {
       await TheoDoiMuonSach.updateOverdueBooks();
       console.log("✅ Updated overdue books status and penalties");
@@ -76,7 +70,7 @@ export default {
       console.error("⚠️ Error updating overdue books:", error);
     }
 
-    // Parse and validate query parameters
+    
     const page = Math.max(1, parseInt(req.query.page) || 1);
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 10));
     const search = req.query.search || "";
@@ -93,44 +87,39 @@ export default {
       sortOrder,
     });
 
-    // Build search query
+    
     const searchQuery = buildSearchQuery(search);
     if (status) {
       searchQuery.TrangThai = status;
     }
     
-    // Handle different activation status filters
+    
     const includeInactive = req.query.includeInactive === 'true';
     const onlyPending = req.query.onlyPending === 'true';
     
     if (onlyPending) {
-      searchQuery.isActivate = 0; // Only show pending requests
+      searchQuery.isActivate = 0; 
     } else if (!includeInactive) {
-      searchQuery.isActivate = 1; // Only show approved requests by default
+      searchQuery.isActivate = 1; 
     }
-    // If includeInactive is true, show both (no filter on isActivate)
+    
     
     console.log("Search query built:", JSON.stringify(searchQuery));
 
-    // Get total count for pagination
+    
     console.log("Getting total count...");
     const total = await TheoDoiMuonSach.countDocuments(searchQuery);
     console.log("Total TheoDoiMuonSach documents found:", total);
 
-    // Build the main query step by step
+    
     console.log("Building main query...");
     const skip = (page - 1) * limit;
-
-    // Create query without chaining to avoid issues
     let query = TheoDoiMuonSach.find(searchQuery);
-
-    // No population - return MaDocGia and MaSach as strings only
-
-    // Apply pagination
+    
     query = query.skip(skip);
     query = query.limit(limit);
 
-    // Apply sorting - validate sortBy field first
+    
     const validSortFields = [
       "MaTheoDoiMuonSach",
       "MaDocGia",
@@ -148,7 +137,7 @@ export default {
       sort: { [finalSortBy]: sortOrder },
     });
 
-    // Execute query
+    
     console.log("Executing TheoDoiMuonSach query...");
     const data = await query.lean();
     console.log(
@@ -157,7 +146,7 @@ export default {
       "TheoDoiMuonSach items"
     );
 
-    // Build pagination response
+    
     const totalPages = Math.ceil(total / limit);
     const paginationInfo = {
       currentPage: page,
@@ -170,7 +159,7 @@ export default {
 
     console.log("Pagination info:", paginationInfo);
 
-    // Send response
+    
     res.json({
       success: true,
       message: "Lấy danh sách theo dõi mượn sách thành công",
@@ -183,9 +172,7 @@ export default {
     );
   },
 
-  /**
-   * GET /api/theodoimuonsach/:id - Lấy thông tin chi tiết
-   */
+  
   async getById(req, res) {
     console.log("Getting TheoDoiMuonSach by ID:", req.params.id);
 
@@ -212,15 +199,13 @@ export default {
     });
   },
 
-  /**
-   * POST /api/theodoimuonsach/muon - Mượn sách
-   */
+  
   async borrowBook(req, res) {
     console.log("Creating new borrow record:", req.body);
 
     const { MaDocGia, MaSach, NgayHenTra, GhiChu, NhanVienMuon } = req.body;
 
-    // Validate required fields
+    
     if (!MaDocGia || !MaSach || !NgayHenTra || !NhanVienMuon) {
       throw new AppError(
         "Thiếu thông tin bắt buộc",
@@ -229,14 +214,14 @@ export default {
       );
     }
 
-    // Check if reader exists
+    
     console.log("Checking if reader exists:", MaDocGia);
     const docGia = await DocGia.findOne({ MaDocGia }).lean();
     if (!docGia) {
       throw new AppError("Không tìm thấy độc giả", 404, "DOCGIA_NOT_FOUND");
     }
 
-    // Check if book exists and available
+    
     console.log("Checking if book exists:", MaSach);
     const sach = await Sach.findOne({ MaSach }).lean();
     if (!sach) {
@@ -249,7 +234,7 @@ export default {
       throw new AppError("Sách đã hết", 400, "BOOK_OUT_OF_STOCK");
     }
 
-    // Check if reader already borrowed this book and not returned
+    
     console.log("Checking existing borrow record...");
     const existingBorrow = await TheoDoiMuonSach.findOne({
       MaDocGia,
@@ -265,10 +250,10 @@ export default {
       );
     }
 
-    // Generate next ID
+    
     const MaTheoDoiMuonSach = await generateNextId();
 
-    // Create borrow record
+    
     console.log("Creating new TheoDoiMuonSach record...");
     const theoDoiMuonSach = new TheoDoiMuonSach({
       MaTheoDoiMuonSach,
@@ -283,12 +268,12 @@ export default {
     await theoDoiMuonSach.save();
     console.log("Borrow record saved successfully");
 
-    // Decrease book available quantity
+    
     console.log("Decreasing book available quantity...");
     await Sach.findOneAndUpdate({ MaSach }, { $inc: { SoQuyenConLai: -1 } });
     console.log("Book available quantity updated");
 
-    // Return without population
+    
     console.log("Returning saved record...");
     const savedRecord = await TheoDoiMuonSach.findById(
       theoDoiMuonSach._id
@@ -303,9 +288,7 @@ export default {
     console.log("Borrow book operation completed successfully");
   },
 
-  /**
-   * PUT /api/theodoimuonsach/:id/tra - Trả sách
-   */
+  
   async returnBook(req, res) {
     console.log("Processing book return for ID:", req.params.id);
 
@@ -335,7 +318,7 @@ export default {
       throw new AppError("Sách đã được trả", 400, "ALREADY_RETURNED");
     }
 
-    // Update return information
+    
     console.log("Updating return information...");
     theoDoiMuonSach.NgayTra = new Date();
     theoDoiMuonSach.TrangThai = "Đã trả";
@@ -347,7 +330,7 @@ export default {
     await theoDoiMuonSach.save();
     console.log("Return record updated successfully");
 
-    // Increase book available quantity
+    
     console.log("Increasing book available quantity...");
     await Sach.findOneAndUpdate(
       { MaSach: theoDoiMuonSach.MaSach },
@@ -355,7 +338,7 @@ export default {
     );
     console.log("Book available quantity updated");
 
-    // Return without population
+
     console.log("Returning updated record...");
     const updatedRecord = await TheoDoiMuonSach.findById(
       theoDoiMuonSach._id
@@ -370,9 +353,7 @@ export default {
     console.log("Return book operation completed successfully");
   },
 
-  /**
-   * PUT /api/theodoimuonsach/:id/giahan - Gia hạn sách
-   */
+  
   async extendDueDate(req, res) {
     console.log("Processing due date extension for ID:", req.params.id);
 
@@ -411,7 +392,7 @@ export default {
       );
     }
 
-    // Update due date
+    
     console.log("Updating due date...");
     theoDoiMuonSach.NgayHenTra = newDueDate;
     if (GhiChu) {
@@ -421,7 +402,7 @@ export default {
     await theoDoiMuonSach.save();
     console.log("Due date updated successfully");
 
-    // Return without population
+    
     console.log("Returning updated record...");
     const updatedRecord = await TheoDoiMuonSach.findById(
       theoDoiMuonSach._id
@@ -436,9 +417,7 @@ export default {
     console.log("Extend due date operation completed successfully");
   },
 
-  /**
-   * GET /api/theodoimuonsach/overdue - Lấy danh sách sách quá hạn
-   */
+  
   async getOverdue(req, res) {
     console.log("Getting overdue books...");
 
@@ -464,9 +443,7 @@ export default {
     console.log("Get overdue books operation completed successfully");
   },
 
-  /**
-   * GET /api/theodoimuonsach/docgia/:maDocGia - Lấy lịch sử mượn của độc giả
-   */
+  
   async getByReader(req, res) {
     console.log("Getting borrow history for reader:", req.params.maDocGia);
 
@@ -552,9 +529,7 @@ export default {
     }
   },
 
-  /**
-   * GET /api/theodoimuonsach/sach/:maSach - Lấy lịch sử mượn của sách
-   */
+  
   async getByBook(req, res) {
     console.log("Getting borrow history for book:", req.params.maSach);
 
@@ -576,9 +551,7 @@ export default {
     console.log("Get book borrow history operation completed successfully");
   },
 
-  /**
-   * POST /api/theodoimuonsach/update-overdue - Cập nhật sách quá hạn thủ công
-   */
+  
   async updateOverdue(req, res) {
     console.log('Manually updating overdue books...');
     
@@ -604,9 +577,7 @@ export default {
     }
   },
 
-  /**
-   * GET /api/theodoimuonsach/test-overdue - Test hệ thống quá hạn
-   */
+  
   async testOverdue(req, res) {
     console.log('Testing overdue system...');
     
@@ -662,15 +633,13 @@ export default {
     }
   },
 
-  /**
-   * POST /api/theodoimuonsach/register - Đăng ký mượn sách (cho độc giả)
-   */
+  
   async registerBorrow(req, res) {
     console.log('Reader registering borrow request:', req.body);
 
     const { MaDocGia, MaSach, NgayHenTra, GhiChu } = req.body;
 
-    // Validate required fields
+    
     if (!MaDocGia || !MaSach || !NgayHenTra) {
       throw new AppError(
         'Thiếu thông tin bắt buộc',
@@ -679,14 +648,14 @@ export default {
       );
     }
 
-    // Check if reader exists
+
     console.log('Checking if reader exists:', MaDocGia);
     const docGia = await DocGia.findOne({ MaDocGia }).lean();
     if (!docGia) {
       throw new AppError('Không tìm thấy độc giả', 404, 'DOCGIA_NOT_FOUND');
     }
 
-    // Check if book exists and available
+    
     console.log('Checking if book exists:', MaSach);
     const sach = await Sach.findOne({ MaSach }).lean();
     if (!sach) {
@@ -699,7 +668,7 @@ export default {
       throw new AppError('Sách đã hết', 400, 'BOOK_OUT_OF_STOCK');
     }
 
-    // Check if reader already has pending or active borrow for this book
+    
     console.log('Checking existing borrow record...');
     const existingBorrow = await TheoDoiMuonSach.findOne({
       MaDocGia,
@@ -723,7 +692,7 @@ export default {
       }
     }
 
-    // Validate due date
+    
     const dueDate = new Date(NgayHenTra);
     const today = new Date();
     const maxDate = new Date();
@@ -745,10 +714,10 @@ export default {
       );
     }
 
-    // Generate next ID
+    
     const MaTheoDoiMuonSach = await generateNextId();
 
-    // Create borrow registration (pending approval)
+    
     console.log('Creating borrow registration...');
     const theoDoiMuonSach = new TheoDoiMuonSach({
       MaTheoDoiMuonSach,
@@ -758,14 +727,14 @@ export default {
       NgayHenTra: new Date(NgayHenTra),
       GhiChu: GhiChu || 'Đăng ký mượn sách từ độc giả',
       TrangThai: 'Đang mượn',
-      isActivate: 0, // Pending approval
-      // No NhanVienMuon for registration - will be set when approved
+      isActivate: 0, 
+      
     });
 
     await theoDoiMuonSach.save();
     console.log('Borrow registration saved successfully');
 
-    // Return the registration record
+    
     const savedRecord = await TheoDoiMuonSach.findById(
       theoDoiMuonSach._id
     ).lean();
@@ -779,9 +748,7 @@ export default {
     console.log('Borrow registration completed successfully');
   },
 
-  /**
-   * POST /api/theodoimuonsach/:id/approve - Duyệt phiếu đăng ký mượn sách
-   */
+  
   async approveRequest(req, res) {
     console.log('Approving borrow request:', req.params.id);
 
@@ -805,7 +772,7 @@ export default {
       );
     }
 
-    // Check if book is still available
+    
     const sach = await Sach.findOne({ MaSach: theoDoiMuonSach.MaSach });
     if (!sach) {
       throw new AppError('Không tìm thấy sách', 404, 'SACH_NOT_FOUND');
@@ -816,17 +783,17 @@ export default {
       throw new AppError('Sách đã hết, không thể duyệt', 400, 'BOOK_OUT_OF_STOCK');
     }
 
-    // Get current user (staff) info
-    const currentUser = req.user || { MSNV: 'NV001' }; // Default fallback
+    
+    const currentUser = req.user || { MSNV: 'NV001' }; 
 
-    // Approve the request
+    
     theoDoiMuonSach.isActivate = 1;
     theoDoiMuonSach.NhanVienMuon = currentUser.MSNV || 'NV001';
     theoDoiMuonSach.GhiChu = (theoDoiMuonSach.GhiChu || '') + ' - Đã được duyệt bởi nhân viên';
 
     await theoDoiMuonSach.save();
 
-    // Decrease book available quantity
+    
     await Sach.findOneAndUpdate(
       { MaSach: theoDoiMuonSach.MaSach },
       { $inc: { SoQuyenConLai: -1 } }
@@ -841,9 +808,7 @@ export default {
     console.log('Request approved successfully');
   },
 
-  /**
-   * DELETE /api/theodoimuonsach/:id/reject - Từ chối phiếu đăng ký mượn sách
-   */
+  
   async rejectRequest(req, res) {
     console.log('Rejecting borrow request:', req.params.id);
 
@@ -867,7 +832,7 @@ export default {
       );
     }
 
-    // Delete the request
+    
     await TheoDoiMuonSach.deleteOne({ MaTheoDoiMuonSach: req.params.id });
 
     res.json({

@@ -3,15 +3,12 @@ import config from '../config.js';
 import { NhanVien } from '../models/index.js';
 import DocGia from '../models/DocGia.js';
 
-/**
- * JWT Authentication Middleware
- * Verifies JWT token and attaches user info to request
- */
+
 export const authenticateToken = async (req, res, next) => {
   try {
-    // Get token from header
+
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+    const token = authHeader && authHeader.split(' ')[1]; 
 
     if (!token) {
       return res.status(401).json({
@@ -21,10 +18,10 @@ export const authenticateToken = async (req, res, next) => {
       });
     }
 
-    // Verify token
+    
     const decoded = jwt.verify(token, config.jwtSecret);
     
-    // Get user from database
+    
     const nhanVien = await NhanVien.findById(decoded.id).select('-Password');
     
     if (!nhanVien) {
@@ -35,7 +32,7 @@ export const authenticateToken = async (req, res, next) => {
       });
     }
 
-    // Check if user is still active
+    
     if (nhanVien.TrangThai !== 'Đang làm việc') {
       return res.status(401).json({
         success: false,
@@ -44,7 +41,7 @@ export const authenticateToken = async (req, res, next) => {
       });
     }
 
-    // Check activation status (temporarily disabled for debugging)
+    
     if (nhanVien.isActivate != 1) {
       console.log('Account activation check failed:', {
         MSNV: nhanVien.MSNV,
@@ -58,7 +55,7 @@ export const authenticateToken = async (req, res, next) => {
       });
     }
 
-    // Attach user to request
+    
     req.user = nhanVien;
     next();
 
@@ -88,10 +85,7 @@ export const authenticateToken = async (req, res, next) => {
   }
 };
 
-/**
- * Permission-based authorization middleware
- * Checks if user has required permission
- */
+
 export const requirePermission = (permission) => {
   return (req, res, next) => {
     if (!req.user) {
@@ -102,7 +96,7 @@ export const requirePermission = (permission) => {
       });
     }
 
-    // Check if user has the required permission
+    
     if (!req.user.hasPermission(permission)) {
       return res.status(403).json({
         success: false,
@@ -115,12 +109,9 @@ export const requirePermission = (permission) => {
   };
 };
 
-/**
- * Role-based authorization middleware
- * Checks if user has required role
- */
+
 export const requireRole = (roles) => {
-  // Ensure roles is an array
+  
   const allowedRoles = Array.isArray(roles) ? roles : [roles];
   
   return (req, res, next) => {
@@ -132,7 +123,7 @@ export const requireRole = (roles) => {
       });
     }
 
-    // Check if user has one of the required roles
+    
     if (!allowedRoles.includes(req.user.ChucVu)) {
       return res.status(403).json({
         success: false,
@@ -145,10 +136,7 @@ export const requireRole = (roles) => {
   };
 };
 
-/**
- * Optional authentication middleware
- * Attaches user if token is valid, but doesn't require it
- */
+
 export const optionalAuth = async (req, res, next) => {
   try {
     const authHeader = req.headers['authorization'];
@@ -170,15 +158,12 @@ export const optionalAuth = async (req, res, next) => {
   }
 };
 
-/**
- * Reader Authentication Middleware
- * Verifies JWT token for DocGia (readers)
- */
+
 export const authenticateReader = async (req, res, next) => {
   try {
-    // Get token from header
+
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+    const token = authHeader && authHeader.split(' ')[1]; 
 
     if (!token) {
       return res.status(401).json({
@@ -188,10 +173,10 @@ export const authenticateReader = async (req, res, next) => {
       });
     }
 
-    // Verify token
+    
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
     
-    // Check if this is a reader token
+    
     if (decoded.role !== 'reader') {
       return res.status(401).json({
         success: false,
@@ -200,7 +185,7 @@ export const authenticateReader = async (req, res, next) => {
       });
     }
     
-    // Get reader from database
+    
     const docGia = await DocGia.findById(decoded.id).select('-password');
     
     if (!docGia) {
@@ -211,7 +196,7 @@ export const authenticateReader = async (req, res, next) => {
       });
     }
 
-    // Check if reader account is still active
+    
     if (!docGia.isActive) {
       return res.status(401).json({
         success: false,
@@ -220,7 +205,7 @@ export const authenticateReader = async (req, res, next) => {
       });
     }
 
-    // Attach reader to request
+    
     req.user = docGia;
     next();
 
@@ -250,15 +235,12 @@ export const authenticateReader = async (req, res, next) => {
   }
 };
 
-/**
- * Universal Authentication Middleware
- * Supports both staff and readers
- */
+
 export const authenticateUser = async (req, res, next) => {
   try {
-    // Get token from header
+    
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+    const token = authHeader && authHeader.split(' ')[1]; 
 
     if (!token) {
       return res.status(401).json({
@@ -268,12 +250,12 @@ export const authenticateUser = async (req, res, next) => {
       });
     }
 
-    // Verify token
+    
     const decoded = jwt.verify(token, process.env.JWT_SECRET || config.jwtSecret);
     
     let user = null;
     
-    // Check role and get appropriate user
+    
     if (decoded.role === 'reader') {
       user = await DocGia.findById(decoded.id).select('-password');
       if (user && !user.isActive) {
@@ -284,7 +266,7 @@ export const authenticateUser = async (req, res, next) => {
         });
       }
     } else {
-      // Assume staff/admin
+      
       user = await NhanVien.findById(decoded.id).select('-Password');
       if (user && user.TrangThai !== 'Đang làm việc') {
         return res.status(401).json({
@@ -316,7 +298,7 @@ export const authenticateUser = async (req, res, next) => {
       });
     }
 
-    // Attach user and role to request
+      
     req.user = user;
     req.userRole = decoded.role;
     next();

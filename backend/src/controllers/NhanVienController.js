@@ -1,10 +1,6 @@
 import { NhanVien, TheoDoiMuonSach } from '../models/index.js';
 
-/**
- * NhanVien Controller - Quản lý nhân viên
- */
 
-// Helper function to build search query
 function buildSearchQuery(search) {
   if (!search) return {};
   
@@ -21,7 +17,6 @@ function buildSearchQuery(search) {
   };
 }
 
-// Helper function to build filter query
 function buildFilterQuery(filters) {
   const query = {};
   
@@ -37,9 +32,7 @@ function buildFilterQuery(filters) {
 }
 
 export default {
-  /**
-   * GET /api/nhanvien - Lấy danh sách nhân viên với pagination và search
-   */
+  
   async getAll(req, res) {
     try {
       const page = Math.max(1, parseInt(req.query.page) || 1);
@@ -48,15 +41,15 @@ export default {
       const sortBy = req.query.sortBy || 'MSNV';
       const sortOrder = req.query.sortOrder === 'desc' ? -1 : 1;
       
-      // Build queries
+      
       const searchQuery = buildSearchQuery(search);
       const filterQuery = buildFilterQuery(req.query);
       const combinedQuery = { ...searchQuery, ...filterQuery };
       
-      // Get total count
+      
       const total = await NhanVien.countDocuments(combinedQuery);
       
-      // Get data with pagination (exclude password)
+      
       const data = await NhanVien.find(combinedQuery)
         .select('-Password')
         .skip((page - 1) * limit)
@@ -64,7 +57,7 @@ export default {
         .sort({ [sortBy]: sortOrder })
         .lean();
       
-      // Calculate pagination info
+      
       const totalPages = Math.ceil(total / limit);
       const hasNextPage = page < totalPages;
       const hasPrevPage = page > 1;
@@ -95,9 +88,7 @@ export default {
     }
   },
 
-  /**
-   * GET /api/nhanvien/:id - Lấy thông tin chi tiết nhân viên
-   */
+  
   async getById(req, res) {
     try {
       const nhanVien = await NhanVien.findById(req.params.id).select('-Password');
@@ -110,7 +101,7 @@ export default {
         });
       }
       
-      // Get work statistics
+      
       const workStats = await TheoDoiMuonSach.aggregate([
         {
           $match: {
@@ -162,12 +153,10 @@ export default {
     }
   },
 
-  /**
-   * POST /api/nhanvien - Tạo nhân viên mới
-   */
+  
   async create(req, res) {
     try {
-      // Check if MSNV already exists
+      
       if (req.body.MSNV) {
         const existingNV = await NhanVien.findOne({ MSNV: req.body.MSNV });
         if (existingNV) {
@@ -179,7 +168,7 @@ export default {
         }
       }
       
-      // Check if Email already exists
+      
       if (req.body.Email) {
         const existingEmail = await NhanVien.findOne({ Email: req.body.Email });
         if (existingEmail) {
@@ -194,7 +183,7 @@ export default {
       const nhanVien = new NhanVien(req.body);
       await nhanVien.save();
       
-      // Remove password from response
+      
       const responseData = nhanVien.toObject();
       delete responseData.Password;
       
@@ -234,17 +223,15 @@ export default {
     }
   },
 
-  /**
-   * PUT /api/nhanvien/:id - Cập nhật thông tin nhân viên
-   */
+  
   async update(req, res) {
     try {
-      // Don't allow password update through this endpoint
+      
       if (req.body.Password) {
         delete req.body.Password;
       }
       
-      // Check if trying to update MSNV to existing value
+
       if (req.body.MSNV) {
         const existingNV = await NhanVien.findOne({ 
           MSNV: req.body.MSNV,
@@ -260,7 +247,7 @@ export default {
         }
       }
       
-      // Check if trying to update Email to existing value
+      
       if (req.body.Email) {
         const existingEmail = await NhanVien.findOne({ 
           Email: req.body.Email,
@@ -317,12 +304,10 @@ export default {
     }
   },
 
-  /**
-   * DELETE /api/nhanvien/:id - Xóa nhân viên
-   */
+  
   async remove(req, res) {
     try {
-      // Don't allow deleting current user
+      
       if (req.user && req.user._id.toString() === req.params.id) {
         return res.status(400).json({
           success: false,
@@ -331,7 +316,7 @@ export default {
         });
       }
       
-      // Check if employee has processed transactions
+      
       const transactionCount = await TheoDoiMuonSach.countDocuments({
         $or: [
           { NhanVienMuon: req.params.id },
@@ -373,9 +358,7 @@ export default {
     }
   },
 
-  /**
-   * GET /api/nhanvien/active - Lấy danh sách nhân viên đang hoạt động
-   */
+  
   async getActive(req, res) {
     try {
       const nhanViens = await NhanVien.find({ TrangThai: 'Đang làm việc' })
@@ -398,9 +381,7 @@ export default {
     }
   },
 
-  /**
-   * PATCH /api/nhanvien/:id/activate - Kích hoạt/vô hiệu hóa nhân viên
-   */
+  
   async toggleActivate(req, res) {
     try {
       const nhanVien = await NhanVien.findById(req.params.id);
@@ -413,7 +394,7 @@ export default {
         });
       }
       
-      // Toggle activation status
+          
       nhanVien.isActivate = nhanVien.isActivate === 1 ? 0 : 1;
       await nhanVien.save();
       

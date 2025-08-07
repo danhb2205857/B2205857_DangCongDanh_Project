@@ -1,9 +1,6 @@
-/**
- * Validation schemas for all models
- */
 import { VALIDATION_PATTERNS } from '../utils/validation.js';
 
-// Sach validation schema
+
 export const sachSchema = {
   MaSach: {
     required: true,
@@ -84,7 +81,7 @@ export const sachSchema = {
   }
 };
 
-// DocGia validation schema
+
 export const docGiaSchema = {
   MaDocGia: {
     required: true,
@@ -167,7 +164,7 @@ export const docGiaSchema = {
   }
 };
 
-// NhaXuatBan validation schema
+
 export const nhaXuatBanSchema = {
   MaNhaXuatBan: {
     required: true,
@@ -198,7 +195,7 @@ export const nhaXuatBanSchema = {
   }
 };
 
-// NhanVien validation schema
+
 export const nhanVienSchema = {
   MSNV: {
     required: true,
@@ -278,7 +275,7 @@ export const nhanVienSchema = {
   }
 };
 
-// TheoDoiMuonSach validation schema
+
 export const theoDoiMuonSachSchema = {
   MaDocGia: {
     required: true,
@@ -384,10 +381,10 @@ export const theoDoiMuonSachSchema = {
   }
 };
 
-// Update schemas (for PUT requests) - make all fields optional except ID
+
 export const sachUpdateSchema = {
   ...sachSchema,
-  MaSach: { ...sachSchema.MaSach, required: false }, // ID should not be updated
+  MaSach: { ...sachSchema.MaSach, required: false }, 
   TenSach: { ...sachSchema.TenSach, required: false },
   DonGia: { ...sachSchema.DonGia, required: false },
   SoQuyen: { ...sachSchema.SoQuyen, required: false },
@@ -424,7 +421,7 @@ export const nhanVienUpdateSchema = {
   TrangThai: { ...nhanVienSchema.TrangThai, required: false }
 };
 
-// Return book schema (only requires NgayTra and optional fields)
+
 export const returnBookSchema = {
   NgayTra: {
     required: true,
@@ -459,7 +456,7 @@ export const returnBookSchema = {
   }
 };
 
-// Register validation schema
+
 export const registerSchema = {
   fullName: {
     required: true,

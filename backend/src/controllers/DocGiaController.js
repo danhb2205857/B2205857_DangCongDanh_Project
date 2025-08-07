@@ -3,27 +3,24 @@ import { AppError } from '../middlewares/errorHandler.js';
 import TheoDoiMuonSach from '../models/TheoDoiMuonSach.js';
 import jwt from 'jsonwebtoken';
 
-/**
- * DocGia Controller - Quản lý độc giả
- */
 
-// Helper function to build search query with improved error handling
+
 function buildSearchQuery(search) {
   console.log('Building DocGia search query for:', search);
   
-  // Return empty query if no search term
+
   if (!search || typeof search !== 'string' || search.trim().length === 0) {
     console.log('No valid search term, returning empty query');
     return {};
   }
   
-  // Clean and validate search term
+
   const searchTerm = search.trim();
   
-  // Escape special regex characters to prevent regex injection
+
   const escapedSearchTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   
-  // Create case-insensitive regex
+
   const searchRegex = new RegExp(escapedSearchTerm, 'i');
   
   const query = {
@@ -42,13 +39,11 @@ function buildSearchQuery(search) {
 }
 
 export default {
-  /**
-   * GET /api/docgia - Lấy danh sách độc giả với pagination và search
-   */
+  
   async getAll(req, res) {
     console.log('=== Starting DocGia getAll function ===');
     
-    // Parse and validate query parameters
+
     const page = Math.max(1, parseInt(req.query.page) || 1);
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 10));
     const search = req.query.search || '';
@@ -57,27 +52,27 @@ export default {
     
     console.log('Query params:', { page, limit, search, sortBy, sortOrder });
     
-    // Build search query
+
     const searchQuery = buildSearchQuery(search);
     console.log('Search query built:', JSON.stringify(searchQuery));
     
-    // Get total count for pagination
+
     console.log('Getting total count...');
     const total = await DocGia.countDocuments(searchQuery);
     console.log('Total DocGia documents found:', total);
     
-    // Build the main query step by step
+
     console.log('Building main query...');
     const skip = (page - 1) * limit;
     
-    // Create query without chaining to avoid issues
+
     let query = DocGia.find(searchQuery);
     
-    // Apply pagination
+
     query = query.skip(skip);
     query = query.limit(limit);
     
-    // Apply sorting - validate sortBy field first
+
     const validSortFields = ['MaDocGia', 'HoLot', 'Ten', 'DiaChi', 'DienThoai'];
     const finalSortBy = validSortFields.includes(sortBy) ? sortBy : 'MaDocGia';
     query = query.sort({ [finalSortBy]: sortOrder });
@@ -88,12 +83,12 @@ export default {
       sort: { [finalSortBy]: sortOrder }
     });
     
-    // Execute query
+
     console.log('Executing DocGia query...');
     const data = await query.lean();
     console.log('Query executed successfully, got', data.length, 'DocGia items');
     
-    // Build pagination response
+
     const totalPages = Math.ceil(total / limit);
     const paginationInfo = {
       currentPage: page,
@@ -106,7 +101,7 @@ export default {
     
     console.log('Pagination info:', paginationInfo);
     
-    // Send response
+
     res.json({
       success: true,
       message: 'Lấy danh sách độc giả thành công',
@@ -119,9 +114,7 @@ export default {
     console.log('=== DocGia getAll function completed successfully ===');
   },
 
-  /**
-   * GET /api/docgia/:id - Lấy thông tin chi tiết độc giả
-   */
+
   async getById(req, res) {
     console.log('Getting DocGia by MaDocGia:', req.params.maDocGia);
     
@@ -138,13 +131,11 @@ export default {
     });
   },
 
-  /**
-   * POST /api/docgia - Tạo độc giả mới
-   */
+
   async create(req, res) {
     console.log('Creating new DocGia:', req.body);
     
-    // Check if MaDocGia already exists
+
     if (req.body.MaDocGia) {
       const existingDocGia = await DocGia.findOne({ MaDocGia: req.body.MaDocGia });
       if (existingDocGia) {
@@ -152,7 +143,7 @@ export default {
       }
     }
     
-    // Check if DienThoai already exists
+
     if (req.body.DienThoai) {
       const existingPhone = await DocGia.findOne({ DienThoai: req.body.DienThoai });
       if (existingPhone) {
@@ -160,7 +151,7 @@ export default {
       }
     }
     
-    // Check if email already exists
+
     if (req.body.email) {
       const existingEmail = await DocGia.findOne({ email: req.body.email.toLowerCase() });
       if (existingEmail) {
@@ -178,13 +169,11 @@ export default {
     });
   },
 
-  /**
-   * PUT /api/docgia/:id - Cập nhật thông tin độc giả
-   */
+
   async update(req, res) {
     console.log('Updating DocGia:', req.params.id, req.body);
     
-    // Check if trying to update DienThoai to existing value
+
     if (req.body.DienThoai) {
       const existingPhone = await DocGia.findOne({
         DienThoai: req.body.DienThoai,
@@ -213,13 +202,11 @@ export default {
     });
   },
 
-  /**
-   * DELETE /api/docgia/:id - Xóa độc giả
-   */
+
   async remove(req, res) {
     console.log('Deleting DocGia:', req.params.id);
     
-    // Check if reader has borrowed books
+
     const borrowCount = await TheoDoiMuonSach.countDocuments({
       MaDocGia: req.params.id,
       NgayTra: null
@@ -242,9 +229,7 @@ export default {
     });
   },
 
-  /**
-   * GET /api/docgia/search/:query - Tìm kiếm độc giả
-   */
+
   async search(req, res) {
     console.log('Searching DocGia with query:', req.params.query);
     
@@ -270,21 +255,19 @@ export default {
     });
   },
 
-  /**
-   * POST /api/docgia/register - Đăng ký tài khoản độc giả
-   */
+  
   async register(req, res) {
     console.log('Registering new DocGia account:', req.body.email);
     
     const { email, password, HoLot, Ten, NgaySinh, Phai, DiaChi, DienThoai, avatar } = req.body;
     
-    // Check if email already exists
+    
     const existingEmail = await DocGia.findOne({ email: email.toLowerCase() });
     if (existingEmail) {
       throw new AppError('Email đã được sử dụng', 400, 'DUPLICATE_EMAIL');
     }
     
-    // Check if DienThoai already exists
+    
     if (DienThoai) {
       const existingPhone = await DocGia.findOne({ DienThoai });
       if (existingPhone) {
@@ -292,7 +275,7 @@ export default {
       }
     }
     
-    // Auto-generate MaDocGia
+    
     const lastDocGia = await DocGia.findOne({}, {}, { sort: { 'MaDocGia': -1 } });
     let nextNumber = 1;
     if (lastDocGia && lastDocGia.MaDocGia && lastDocGia.MaDocGia.match(/^DG(\d+)$/)) {
@@ -302,7 +285,7 @@ export default {
     
     console.log('Generated MaDocGia:', MaDocGia);
     
-    // Create new reader account
+    
     const docGia = new DocGia({
       email,
       password,
@@ -318,7 +301,7 @@ export default {
     
     await docGia.save();
     
-    // Generate JWT token
+    
     const token = jwt.sign(
       { 
         id: docGia._id, 
@@ -330,7 +313,7 @@ export default {
       { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
     );
     
-    // Remove password from response
+    
     const docGiaResponse = docGia.toObject();
     delete docGiaResponse.password;
     
@@ -344,9 +327,7 @@ export default {
     });
   },
 
-  /**
-   * POST /api/docgia/login - Đăng nhập tài khoản độc giả
-   */
+  
   async login(req, res) {
     console.log('DocGia login attempt:', req.body.email);
     
@@ -356,29 +337,29 @@ export default {
       throw new AppError('Email và mật khẩu là bắt buộc', 400, 'MISSING_CREDENTIALS');
     }
     
-    // Find user by email and include password
+    
     const docGia = await DocGia.findByEmail(email);
     
     if (!docGia) {
       throw new AppError('Email hoặc mật khẩu không đúng', 401, 'INVALID_CREDENTIALS');
     }
     
-    // Check if account is active
+    
     if (!docGia.isActive) {
       throw new AppError('Tài khoản đã bị vô hiệu hóa', 401, 'ACCOUNT_DISABLED');
     }
     
-    // Check password
+    
     const isPasswordValid = await docGia.comparePassword(password);
     
     if (!isPasswordValid) {
       throw new AppError('Email hoặc mật khẩu không đúng', 401, 'INVALID_CREDENTIALS');
     }
     
-    // Update last login
+
     await docGia.updateLastLogin();
     
-    // Generate JWT token
+    
     const token = jwt.sign(
       { 
         id: docGia._id, 
@@ -390,7 +371,7 @@ export default {
       { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
     );
     
-    // Remove password from response
+    
     const docGiaResponse = docGia.toObject();
     delete docGiaResponse.password;
     
@@ -404,9 +385,7 @@ export default {
     });
   },
 
-  /**
-   * GET /api/docgia/profile - Lấy thông tin profile độc giả
-   */
+  
   async getProfile(req, res) {
     console.log('Getting DocGia profile:', req.user.id);
     const docGia = await DocGia.findById(req.user.id).select('-password');
@@ -423,23 +402,21 @@ export default {
     });
   },
 
-  /**
-   * PUT /api/docgia/profile - Cập nhật profile độc giả
-   */
+  
   async updateProfile(req, res) {
     console.log('Updating DocGia profile:', req.user.id);
     
     const allowedUpdates = ['HoLot', 'Ten', 'NgaySinh', 'Phai', 'DiaChi', 'DienThoai', 'avatar'];
     const updates = {};
     
-    // Only allow specific fields to be updated
+    
     Object.keys(req.body).forEach(key => {
       if (allowedUpdates.includes(key)) {
         updates[key] = req.body[key];
       }
     });
     
-    // Check if trying to update DienThoai to existing value
+    
     if (updates.DienThoai) {
       const existingPhone = await DocGia.findOne({
         DienThoai: updates.DienThoai,
@@ -468,9 +445,7 @@ export default {
     });
   },
 
-  /**
-   * PUT /api/docgia/change-password - Đổi mật khẩu
-   */
+  
   async changePassword(req, res) {
     console.log('Changing password for DocGia:', req.user.id);
     
@@ -484,21 +459,21 @@ export default {
       throw new AppError('Mật khẩu mới phải có ít nhất 6 ký tự', 400, 'PASSWORD_TOO_SHORT');
     }
     
-    // Find user with password
+    
     const docGia = await DocGia.findById(req.user.id).select('+password');
     
     if (!docGia) {
       throw new AppError('Không tìm thấy thông tin độc giả', 404, 'DOCGIA_NOT_FOUND');
     }
     
-    // Check current password
+    
     const isCurrentPasswordValid = await docGia.comparePassword(currentPassword);
     
     if (!isCurrentPasswordValid) {
       throw new AppError('Mật khẩu hiện tại không đúng', 401, 'INVALID_CURRENT_PASSWORD');
     }
     
-    // Update password
+    
     docGia.password = newPassword;
     await docGia.save();
     
@@ -508,22 +483,20 @@ export default {
     });
   },
 
-  /**
-   * GET /api/docgia/my-borrows - Lấy danh sách sách đang mượn
-   */
+  
   async getMyBorrows(req, res) {
     console.log('Getting borrowed books for DocGia:', req.user.MaDocGia);
     
     try {
-      // Tìm các bản ghi mượn sách chưa trả của độc giả
+      
       const borrowRecords = await TheoDoiMuonSach.find({
         MaDocGia: req.user.MaDocGia,
-        NgayTra: null // Chưa trả
+        NgayTra: null 
       }).populate('MaSach', 'TenSach TacGia AnhBia MaNhaXuatBan')
         .populate('MaNhaXuatBan', 'TenNhaXuatBan')
         .sort({ NgayMuon: -1 });
 
-      // Format dữ liệu trả về
+
       const borrowedBooks = borrowRecords.map(record => ({
         _id: record._id,
         TenSach: record.MaSach?.TenSach || 'N/A',
@@ -547,18 +520,16 @@ export default {
     }
   },
 
-  /**
-   * GET /api/docgia/borrow-history - Lấy lịch sử mượn sách
-   */
+  
   async getBorrowHistory(req, res) {
     console.log('Getting borrow history for DocGia:', req.user.MaDocGia);
     
     try {
       const page = Math.max(1, parseInt(req.query.page) || 1);
       const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 10));
-      const status = req.query.status; // 'returned', 'borrowing', or undefined for all
+      const status = req.query.status; 
 
-      // Build query
+      
       let query = { MaDocGia: req.user.MaDocGia };
       
       if (status === 'returned') {
@@ -567,10 +538,10 @@ export default {
         query.NgayTra = null;
       }
 
-      // Get total count
+      
       const total = await TheoDoiMuonSach.countDocuments(query);
 
-      // Get records with pagination
+      
       const skip = (page - 1) * limit;
       const borrowRecords = await TheoDoiMuonSach.find(query)
         .populate('MaSach', 'TenSach TacGia AnhBia MaNhaXuatBan')
@@ -579,7 +550,7 @@ export default {
         .skip(skip)
         .limit(limit);
 
-      // Format dữ liệu trả về
+      
       const history = borrowRecords.map(record => ({
         _id: record._id,
         TenSach: record.MaSach?.TenSach || 'N/A',
@@ -593,7 +564,7 @@ export default {
         MaDocGia: record.MaDocGia
       }));
 
-      // Build pagination info
+      
       const totalPages = Math.ceil(total / limit);
       const pagination = {
         currentPage: page,
