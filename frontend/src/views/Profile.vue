@@ -22,8 +22,8 @@
               </div>
               <h5 class="mb-1">{{ user?.HoLot }} {{ user?.Ten }}</h5>
               <p class="text-muted mb-2">{{ user?.MaDocGia }}</p>
-              <span class="badge bg-success" v-if="user?.isActive">Hoạt động</span>
-              <span class="badge bg-danger" v-else>Không hoạt động</span>
+              <span class="badge bg-success">Hoạt động</span>
+
             </div>
           </div>
 

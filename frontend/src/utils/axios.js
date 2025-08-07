@@ -9,19 +9,19 @@ const api = axios.create({
   }
 })
 
-// Request interceptor to add auth token - COMMENTED FOR TESTING
-// api.interceptors.request.use(
-//   (config) => {
-//     const token = localStorage.getItem('token')
-//     if (token) {
-//       config.headers.Authorization = `Bearer ${token}`
-//     }
-//     return config
-//   },
-//   (error) => {
-//     return Promise.reject(error)
-//   }
-// )
+// Request interceptor to add auth token
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token')
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
+    return config
+  },
+  (error) => {
+    return Promise.reject(error)
+  }
+)
 
 // Response interceptor to handle errors
 api.interceptors.response.use(
@@ -36,12 +36,13 @@ api.interceptors.response.use(
       
       switch (status) {
         case 401:
-          // Unauthorized - token expired or invalid - COMMENTED FOR TESTING
-          // localStorage.removeItem('token')
-          // localStorage.removeItem('user')
-          // if (window.location.pathname !== '/login') {
-          //   window.location.href = '/login'
-          // }
+          // Unauthorized - token expired or invalid
+          localStorage.removeItem('token')
+          localStorage.removeItem('user')
+          localStorage.removeItem('userRole')
+          if (window.location.pathname !== '/login') {
+            window.location.href = '/login'
+          }
           break
           
         case 403:

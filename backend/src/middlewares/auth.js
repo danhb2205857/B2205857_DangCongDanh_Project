@@ -44,6 +44,20 @@ export const authenticateToken = async (req, res, next) => {
       });
     }
 
+    // Check activation status (temporarily disabled for debugging)
+    if (nhanVien.isActivate != 1) {
+      console.log('Account activation check failed:', {
+        MSNV: nhanVien.MSNV,
+        isActivate: nhanVien.isActivate,
+        isActivateType: typeof nhanVien.isActivate
+      });
+      return res.status(401).json({
+        success: false,
+        message: 'User account is not activated',
+        error: 'ACCOUNT_NOT_ACTIVATED'
+      });
+    }
+
     // Attach user to request
     req.user = nhanVien;
     next();
@@ -277,6 +291,19 @@ export const authenticateUser = async (req, res, next) => {
           success: false,
           message: 'Staff account is not active',
           error: 'ACCOUNT_INACTIVE'
+        });
+      }
+      
+      if (user && user.isActivate != 1) {
+        console.log('Universal auth - Account activation check failed:', {
+          MSNV: user.MSNV,
+          isActivate: user.isActivate,
+          isActivateType: typeof user.isActivate
+        });
+        return res.status(401).json({
+          success: false,
+          message: 'Staff account is not activated',
+          error: 'ACCOUNT_NOT_ACTIVATED'
         });
       }
     }

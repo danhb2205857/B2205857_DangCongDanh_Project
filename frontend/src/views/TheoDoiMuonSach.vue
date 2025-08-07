@@ -7,6 +7,11 @@
             <h5 class="card-title mb-0 text-primary font-weight-bold">
               <i class="bi bi-journal-bookmark me-2"></i>Quản lý mượn trả sách
             </h5>
+            <small class="text-muted">
+              Nhân viên thao tác: <strong>{{ currentUser?.HoTenNV || currentUser?.hoTenNV || 'Không xác định'
+                }}</strong>
+              ({{ currentStaffId }})
+            </small>
           </div>
           <div class="card-body">
             <!-- Search and Add Section -->
@@ -351,7 +356,7 @@
                       <div class="mb-2">
                         <strong>Ngày trả:</strong>
                         <span class="ms-2">{{ viewingRecord.NgayTra ? formatDate(viewingRecord.NgayTra) : 'Chưa trả'
-                          }}</span>
+                        }}</span>
                       </div>
                       <div class="mb-2">
                         <strong>Trạng thái:</strong>
@@ -499,17 +504,31 @@ const returningRecord = ref(null)
 const extendingRecord = ref(null)
 const viewingRecord = ref(null)
 
+// Get current user info
+const getCurrentUser = () => {
+  try {
+    const user = JSON.parse(localStorage.getItem('user') || '{}')
+    return user
+  } catch (error) {
+    console.error('Error parsing user data:', error)
+    return {}
+  }
+}
+
+const currentUser = getCurrentUser()
+const currentStaffId = currentUser?.MSNV || currentUser?.msnv || 'NV001'
+
 // Form data
 const borrowForm = ref({
   MaDocGia: '',
   MaSach: '',
   NgayHenTra: '',
   GhiChu: '',
-  NhanVienMuon: 'NV001' // Default staff ID
+  NhanVienMuon: currentStaffId // Current staff ID
 })
 
 const returnForm = ref({
-  NhanVienTra: 'NV001', // Default staff ID
+  NhanVienTra: currentStaffId, // Current staff ID
   GhiChu: ''
 })
 
@@ -774,7 +793,7 @@ const resetBorrowForm = () => {
     MaSach: '',
     NgayHenTra: '',
     GhiChu: '',
-    NhanVienMuon: 'NV001'
+    NhanVienMuon: currentStaffId
   }
   borrowErrors.value = {}
 }
@@ -829,7 +848,7 @@ const borrowBook = async () => {
 const showReturnModal = (record) => {
   returningRecord.value = record
   returnForm.value = {
-    NhanVienTra: 'NV001',
+    NhanVienTra: currentStaffId,
     GhiChu: ''
   }
   returnErrors.value = {}
@@ -839,7 +858,7 @@ const showReturnModal = (record) => {
 const closeReturnModal = () => {
   showReturnModalState.value = false
   returningRecord.value = null
-  returnForm.value = { NhanVienTra: 'NV001', GhiChu: '' }
+  returnForm.value = { NhanVienTra: currentStaffId, GhiChu: '' }
   returnErrors.value = {}
 }
 

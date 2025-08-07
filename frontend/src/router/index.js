@@ -6,6 +6,7 @@ const Login = () => import("../views/Login.vue");
 const Register = () => import("../views/Register.vue");
 const UserList = () => import("../views/UserList.vue");
 const DocGia = () => import("../views/DocGia.vue");
+const NhanVien = () => import("../views/NhanVien.vue");
 const Dashboard = () => import("../views/Dashboard.vue");
 
 const SachNew = () => import("../views/SachNew.vue");
@@ -55,6 +56,7 @@ const routes = [
     children: [
       { path: "", name: "Dashboard", component: Dashboard },
       { path: "docgia", name: "DocGia", component: DocGia },
+      { path: "nhanvien", name: "NhanVien", component: NhanVien },
       { path: "sach", name: "Sach", component: SachNew },
       { path: "nhaxuatban", name: "NhaXuatBan", component: NhaXuatBanNew },
       { path: "users", name: "UserList", component: UserList },

@@ -14,27 +14,23 @@
 
               <!-- Chọn loại đăng nhập -->
               <div class="mb-4 d-flex justify-content-center gap-3">
-                <button type="button" class="btn btn-outline-primary" :class="{active: loginType==='reader'}" @click="loginType='reader'">Độc giả</button>
-                <button type="button" class="btn btn-outline-success" :class="{active: loginType==='staff'}" @click="loginType='staff'">Nhân viên</button>
+                <button type="button" class="btn btn-outline-primary" :class="{ active: loginType === 'reader' }"
+                  @click="loginType = 'reader'">Độc giả</button>
+                <button type="button" class="btn btn-outline-success" :class="{ active: loginType === 'staff' }"
+                  @click="loginType = 'staff'">Nhân viên</button>
               </div>
 
               <!-- Login Form -->
               <form @submit.prevent="handleLogin">
                 <div class="mb-3">
-                  <label for="email" class="form-label">{{ loginType==='reader' ? 'Email' : 'Mã nhân viên' }}</label>
+                  <label for="email" class="form-label">{{ loginType === 'reader' ? 'Email' : 'Mã nhân viên' }}</label>
                   <div class="input-group">
                     <span class="input-group-text">
-                      <i :class="loginType==='reader' ? 'fas fa-envelope' : 'fas fa-id-badge'"></i>
+                      <i :class="loginType === 'reader' ? 'fas fa-envelope' : 'fas fa-id-badge'"></i>
                     </span>
-                    <input
-                      v-model="form.email"
-                      :type="loginType==='reader' ? 'email' : 'text'"
-                      class="form-control"
-                      id="email"
-                      :placeholder="loginType==='reader' ? 'Nhập email của bạn' : 'Nhập mã nhân viên'"
-                      required
-                      :disabled="loading"
-                    >
+                    <input v-model="form.email" :type="loginType === 'reader' ? 'email' : 'text'" class="form-control"
+                      id="email" :placeholder="loginType === 'reader' ? 'Nhập email của bạn' : 'Nhập mã nhân viên'"
+                      required :disabled="loading">
                   </div>
                 </div>
 
@@ -44,34 +40,18 @@
                     <span class="input-group-text">
                       <i class="fas fa-lock"></i>
                     </span>
-                    <input
-                      v-model="form.password"
-                      :type="showPassword ? 'text' : 'password'"
-                      class="form-control"
-                      id="password"
-                      placeholder="Nhập mật khẩu"
-                      required
-                      :disabled="loading"
-                    >
-                    <button
-                      type="button"
-                      class="btn btn-outline-secondary"
-                      @click="showPassword = !showPassword"
-                      :disabled="loading"
-                    >
+                    <input v-model="form.password" :type="showPassword ? 'text' : 'password'" class="form-control"
+                      id="password" placeholder="Nhập mật khẩu" required :disabled="loading">
+                    <button type="button" class="btn btn-outline-secondary" @click="showPassword = !showPassword"
+                      :disabled="loading">
                       <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
                     </button>
                   </div>
                 </div>
 
                 <div class="mb-3 form-check">
-                  <input
-                    v-model="form.rememberMe"
-                    type="checkbox"
-                    class="form-check-input"
-                    id="rememberMe"
-                    :disabled="loading"
-                  >
+                  <input v-model="form.rememberMe" type="checkbox" class="form-check-input" id="rememberMe"
+                    :disabled="loading">
                   <label class="form-check-label" for="rememberMe">
                     Ghi nhớ đăng nhập
                   </label>
@@ -84,11 +64,7 @@
                 </div>
 
                 <!-- Submit Button -->
-                <button
-                  type="submit"
-                  class="btn btn-primary w-100 py-2 mb-3"
-                  :disabled="loading"
-                >
+                <button type="submit" class="btn btn-primary w-100 py-2 mb-3" :disabled="loading">
                   <span v-if="loading" class="spinner-border spinner-border-sm me-2" role="status"></span>
                   <i v-else class="fas fa-sign-in-alt me-2"></i>
                   {{ loading ? 'Đang đăng nhập...' : 'Đăng nhập' }}
@@ -290,20 +266,72 @@ export default {
   border: none;
 }
 
-.active {
-  background-color: rgba(13, 110, 253, 0.1);
+/* Button styling cho loại đăng nhập */
+.btn-outline-primary {
+  border-width: 2px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-outline-primary:hover {
+  background-color: #0d6efd;
   border-color: #0d6efd;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
+}
+
+.btn-outline-primary:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(13, 110, 253, 0.4);
+}
+
+.btn-outline-primary.active {
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+  color: white;
+  box-shadow: 0 3px 8px rgba(13, 110, 253, 0.3);
+}
+
+.btn-outline-success {
+  border-width: 2px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-outline-success:hover {
+  background-color: #198754;
+  border-color: #198754;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(25, 135, 84, 0.3);
+}
+
+.btn-outline-success:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(25, 135, 84, 0.4);
+}
+
+.btn-outline-success.active {
+  background-color: #198754;
+  border-color: #198754;
+  color: white;
+  box-shadow: 0 3px 8px rgba(25, 135, 84, 0.3);
 }
 
 @media (max-width: 768px) {
   .login-page {
     padding: 1rem;
   }
-  
+
   .card-body {
     padding: 2rem !important;
   }
-  
+
   .logo {
     width: 60px;
     height: 60px;

@@ -396,5 +396,43 @@ export default {
         error: 'GET_ACTIVE_ERROR'
       });
     }
+  },
+
+  /**
+   * PATCH /api/nhanvien/:id/activate - Kích hoạt/vô hiệu hóa nhân viên
+   */
+  async toggleActivate(req, res) {
+    try {
+      const nhanVien = await NhanVien.findById(req.params.id);
+      
+      if (!nhanVien) {
+        return res.status(404).json({
+          success: false,
+          message: 'Không tìm thấy nhân viên',
+          error: 'NHANVIEN_NOT_FOUND'
+        });
+      }
+      
+      // Toggle activation status
+      nhanVien.isActivate = nhanVien.isActivate === 1 ? 0 : 1;
+      await nhanVien.save();
+      
+      const responseData = nhanVien.toObject();
+      delete responseData.Password;
+      
+      res.json({
+        success: true,
+        message: `${nhanVien.isActivate === 1 ? 'Kích hoạt' : 'Vô hiệu hóa'} nhân viên thành công`,
+        data: responseData
+      });
+      
+    } catch (error) {
+      console.error('Toggle activate NhanVien error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Lỗi hệ thống khi thay đổi trạng thái kích hoạt',
+        error: 'TOGGLE_ACTIVATE_ERROR'
+      });
+    }
   }
 };

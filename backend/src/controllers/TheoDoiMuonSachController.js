@@ -1,29 +1,30 @@
 import TheoDoiMuonSach from "../models/TheoDoiMuonSach.js";
 import DocGia from "../models/DocGia.js";
 import Sach from "../models/Sach.js";
+import NhanVien from "../models/NhanVien.js";
 import { AppError } from "../middlewares/errorHandler.js";
 
 /**
  * TheoDoiMuonSach Controller - Quản lý mượn trả sách
  */
 
-// Helper function to build search query with improved error handling
+
 function buildSearchQuery(search) {
   console.log("Building TheoDoiMuonSach search query for:", search);
 
-  // Return empty query if no search term
+
   if (!search || typeof search !== "string" || search.trim().length === 0) {
     console.log("No valid search term, returning empty query");
     return {};
   }
 
-  // Clean and validate search term
+
   const searchTerm = search.trim();
 
-  // Escape special regex characters to prevent regex injection
+
   const escapedSearchTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-  // Create case-insensitive regex
+
   const searchRegex = new RegExp(escapedSearchTerm, "i");
 
   const query = {
@@ -222,7 +223,8 @@ export default {
       throw new AppError("Không tìm thấy sách", 404, "SACH_NOT_FOUND");
     }
 
-    const soQuyenConLai = sach.SoQuyenConLai !== undefined ? sach.SoQuyenConLai : sach.SoQuyen;
+    const soQuyenConLai =
+      sach.SoQuyenConLai !== undefined ? sach.SoQuyenConLai : sach.SoQuyen;
     if (soQuyenConLai <= 0) {
       throw new AppError("Sách đã hết", 400, "BOOK_OUT_OF_STOCK");
     }
@@ -268,7 +270,9 @@ export default {
 
     // Return without population
     console.log("Returning saved record...");
-    const savedRecord = await TheoDoiMuonSach.findById(theoDoiMuonSach._id).lean();
+    const savedRecord = await TheoDoiMuonSach.findById(
+      theoDoiMuonSach._id
+    ).lean();
 
     res.status(201).json({
       success: true,
@@ -333,7 +337,9 @@ export default {
 
     // Return without population
     console.log("Returning updated record...");
-    const updatedRecord = await TheoDoiMuonSach.findById(theoDoiMuonSach._id).lean();
+    const updatedRecord = await TheoDoiMuonSach.findById(
+      theoDoiMuonSach._id
+    ).lean();
 
     res.json({
       success: true,
@@ -397,7 +403,9 @@ export default {
 
     // Return without population
     console.log("Returning updated record...");
-    const updatedRecord = await TheoDoiMuonSach.findById(theoDoiMuonSach._id).lean();
+    const updatedRecord = await TheoDoiMuonSach.findById(
+      theoDoiMuonSach._id
+    ).lean();
 
     res.json({
       success: true,
@@ -442,22 +450,86 @@ export default {
   async getByReader(req, res) {
     console.log("Getting borrow history for reader:", req.params.maDocGia);
 
-    let query = TheoDoiMuonSach.find({ MaDocGia: req.params.maDocGia });
-    query = query.populate("MaSach", "TenSach NguonGoc");
-    query = query.populate("NhanVienMuon", "HoTenNV");
-    query = query.populate("NhanVienTra", "HoTenNV");
-    query = query.sort({ NgayMuon: -1 });
+    try {
+      let query = TheoDoiMuonSach.find({ MaDocGia: req.params.maDocGia });
+      query = query.sort({ NgayMuon: -1 });
 
-    const history = await query.lean();
-    console.log("Found", history.length, "borrow records for reader");
+      const history = await query.lean();
 
-    res.json({
-      success: true,
-      message: "Lấy lịch sử mượn sách thành công",
-      data: history,
-    });
+      const maSachList = [...new Set(history.map((record) => record.MaSach))];
 
-    console.log("Get reader borrow history operation completed successfully");
+      const sachData = await Sach.find({ MaSach: { $in: maSachList } })
+        .select("MaSach TenSach NguonGoc")
+        .lean();
+
+      const sachMap = sachData.reduce((map, sach) => {
+        map[sach.MaSach] = { TenSach: sach.TenSach, NguonGoc: sach.NguonGoc };
+        return map;
+      }, {});
+
+      const maNhanVienList = [
+        ...new Set(
+          history.flatMap((record) =>
+            [record.NhanVienMuon, record.NhanVienTra].filter(Boolean)
+          )
+        ),
+      ];
+
+      const nhanVienData = await NhanVien.find({
+        MSNV: { $in: maNhanVienList },
+      })
+        .select("MaNhanVien HoTenNV")
+        .lean();
+
+      // Tạo map để tra cứu nhanh thông tin nhân viên
+      const nhanVienMap = nhanVienData.reduce((map, nv) => {
+        map[nv.MaNhanVien] = { HoTenNV: nv.HoTenNV };
+        return map;
+      }, {});
+
+      // Kết hợp thông tin sách và nhân viên vào history
+      const enrichedHistory = history.map((record) => ({
+        ...record,
+        MaSach: {
+          MaSach: record.MaSach,
+          TenSach: sachMap[record.MaSach]?.TenSach || "Không tìm thấy sách",
+          NguonGoc:
+            sachMap[record.MaSach]?.NguonGoc || "Không tìm thấy nguồn gốc",
+        },
+        NhanVienMuon: record.NhanVienMuon
+          ? {
+              MaNhanVien: record.NhanVienMuon,
+              HoTenNV:
+                nhanVienMap[record.NhanVienMuon]?.HoTenNV ||
+                "Không tìm thấy nhân viên",
+            }
+          : null,
+        NhanVienTra: record.NhanVienTra
+          ? {
+              MaNhanVien: record.NhanVienTra,
+              HoTenNV:
+                nhanVienMap[record.NhanVienTra]?.HoTenNV ||
+                "Không tìm thấy nhân viên",
+            }
+          : null,
+      }));
+
+      console.log("Found", enrichedHistory.length, "borrow records for reader");
+
+      res.json({
+        success: true,
+        message: "Lấy lịch sử mượn sách thành công",
+        data: enrichedHistory,
+      });
+
+      console.log("Get reader borrow history operation completed successfully");
+    } catch (error) {
+      console.error("Error:", error.message);
+      res.status(500).json({
+        success: false,
+        message: "Lỗi server: " + error.message,
+      });
+    }
   },
 
   /**

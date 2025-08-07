@@ -29,7 +29,7 @@ export const validateLogin = (req, _res, next) => {
     .required(msnv, 'MSNV')
     .required(password, 'Password')
     .length(msnv, 'MSNV', 1, 20)
-    .password(password, 'Password', 'medium');
+    .length(password, 'Password', 1, 100); // Chỉ kiểm tra độ dài, không kiểm tra độ mạnh
 
   if (!validator.isValid()) {
     throw new AppError('Dữ liệu đầu vào không hợp lệ', 400, 'VALIDATION_ERROR');

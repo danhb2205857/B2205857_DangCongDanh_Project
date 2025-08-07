@@ -96,6 +96,12 @@ const NhanVienSchema = new mongoose.Schema(
       },
       default: ["doc_gia", "sach", "muon_tra"],
     },
+    isActivate: {
+      type: Number,
+      enum: [0, 1],
+      default: 0,
+      required: true,
+    },
     LanDangNhapCuoi: {
       type: Date,
     },
@@ -181,6 +187,7 @@ NhanVienSchema.statics.authenticate = async function (msnv, password) {
     const nhanVien = await this.findOne({
       MSNV: msnv.toUpperCase(),
       TrangThai: "Đang làm việc",
+      isActivate: 1,
     });
 
     if (!nhanVien) {

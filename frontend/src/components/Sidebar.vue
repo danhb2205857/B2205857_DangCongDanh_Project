@@ -5,11 +5,7 @@
         <i class="bi bi-book-half"></i>
         <span v-if="!collapsed" class="brand-text">Quản lý mượn sách</span>
       </div>
-      <button 
-        class="sidebar-toggle" 
-        @click="toggleSidebar"
-        :title="collapsed ? 'Mở rộng' : 'Thu gọn'"
-      >
+      <button class="sidebar-toggle" @click="toggleSidebar" :title="collapsed ? 'Mở rộng' : 'Thu gọn'">
         <i class="bi" :class="collapsed ? 'bi-chevron-right' : 'bi-chevron-left'"></i>
       </button>
     </div>
@@ -17,12 +13,8 @@
     <nav class="sidebar-nav">
       <ul class="nav-list">
         <li class="nav-item" v-for="item in menuItems" :key="item.name">
-          <router-link 
-            :to="item.path" 
-            class="nav-link"
-            :class="{ 'active': isActive(item.path) }"
-            @click="handleNavClick"
-          >
+          <router-link :to="item.path" class="nav-link" :class="{ 'active': isActive(item.path) }"
+            @click="handleNavClick">
             <i class="nav-icon" :class="item.icon"></i>
             <span v-if="!collapsed" class="nav-text">{{ item.label }}</span>
             <span v-if="item.badge && !collapsed" class="nav-badge" :class="item.badgeClass">
@@ -55,41 +47,6 @@ const props = defineProps({
   modelValue: {
     type: Boolean,
     default: false
-  },
-  menuItems: {
-    type: Array,
-    default: () => [
-      {
-        name: 'dashboard',
-        path: '/admin',
-        label: 'Thống kê',
-        icon: 'bi bi-speedometer2'
-      },
-      {
-        name: 'docgia',
-        path: '/admin/docgia',
-        label: 'Độc giả',
-        icon: 'bi bi-people'
-      },
-      {
-        name: 'sach',
-        path: '/admin/sach',
-        label: 'Sách',
-        icon: 'bi bi-book'
-      },
-      {
-        name: 'nhaxuatban',
-        path: '/admin/nhaxuatban',
-        label: 'Nhà xuất bản',
-        icon: 'bi bi-building'
-      },
-      {
-        name: 'theodoimuonsach',
-        path: '/admin/theodoimuonsach',
-        label: 'Mượn trả sách',
-        icon: 'bi bi-arrow-repeat'
-      }
-    ]
   }
 })
 
@@ -98,6 +55,48 @@ const emit = defineEmits(['update:modelValue', 'nav-click'])
 const route = useRoute()
 const collapsed = ref(props.modelValue)
 const user = ref(null)
+
+// Menu items - show all tabs for all users
+const menuItems = computed(() => {
+  return [
+    {
+      name: 'dashboard',
+      path: '/admin',
+      label: 'Thống kê',
+      icon: 'bi bi-speedometer2'
+    },
+    {
+      name: 'docgia',
+      path: '/admin/docgia',
+      label: 'Độc giả',
+      icon: 'bi bi-people'
+    },
+    {
+      name: 'nhanvien',
+      path: '/admin/nhanvien',
+      label: 'Nhân viên',
+      icon: 'bi bi-person-badge'
+    },
+    {
+      name: 'sach',
+      path: '/admin/sach',
+      label: 'Sách',
+      icon: 'bi bi-book'
+    },
+    {
+      name: 'nhaxuatban',
+      path: '/admin/nhaxuatban',
+      label: 'Nhà xuất bản',
+      icon: 'bi bi-building'
+    },
+    {
+      name: 'theodoimuonsach',
+      path: '/admin/theodoimuonsach',
+      label: 'Mượn trả sách',
+      icon: 'bi bi-arrow-repeat'
+    }
+  ]
+})
 
 // Load user info from localStorage
 onMounted(() => {
@@ -300,7 +299,7 @@ const handleNavClick = () => {
   .sidebar {
     transform: translateX(-100%);
   }
-  
+
   .sidebar.show {
     transform: translateX(0);
   }
