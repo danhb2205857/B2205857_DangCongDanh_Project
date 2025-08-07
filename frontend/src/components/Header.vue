@@ -3,7 +3,7 @@
         <div class="container-fluid">
             <!-- Brand -->
             <router-link to="/admin" class="navbar-brand">
-                <i class="fas fa-book-open me-2"></i>
+                <img class="logo" src="/images/logo.png" alt="">
                 Quản lý thư viện
             </router-link>
 

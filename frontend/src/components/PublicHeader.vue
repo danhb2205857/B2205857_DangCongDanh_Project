@@ -174,7 +174,7 @@
               <div class="row mb-3">
                 <div class="col-md-6">
                   <label class="form-label">Độc giả</label>
-                  <input type="text" class="form-control" :value="user.HoLot && user.Ten ? `${user.HoLot} ${user.Ten}` : `${user.HoLot} ${user.Ten}` || ''" readonly>
+                  <input type="text" class="form-control" :value="user.HoLot && user.Ten" readonly>
                 </div>
                 <div class="col-md-6">
                   <label class="form-label">Mã độc giả</label>

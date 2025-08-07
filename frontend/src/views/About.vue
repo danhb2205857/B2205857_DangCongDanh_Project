@@ -244,7 +244,7 @@ export default {
         stats.value = {
           totalBooks: booksRes.data.data.pagination?.total || 1250,
           totalMembers: membersRes.data.data.pagination?.total || 850,
-          totalBorrows: 3200 // Mock data
+          totalBorrows: 3200
         }
       } catch (error) {
         console.error('Error loading stats:', error)
@@ -267,7 +267,6 @@ export default {
             limit: 3
           }
         })
-        // Debug cấu trúc dữ liệu trả về
         console.log('NhanVien API res.data:', res.data);
         console.log('NhanVien API res.data.data:', res.data.data);
         let arr = [];
