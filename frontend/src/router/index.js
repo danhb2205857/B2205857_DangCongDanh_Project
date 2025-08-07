@@ -13,6 +13,7 @@ const SachNew = () => import("../views/SachNew.vue");
 const NhaXuatBanNew = () => import("../views/NhaXuatBanNew.vue");
 const TheoDoiMuonSach = () => import("../views/TheoDoiMuonSach.vue");
 const AdminLayout = () => import("../layouts/AdminLayout.vue");
+const PhieuDangKy = () => import("../views/PhieuDangKy.vue");
 
 // Public interface components
 const PublicLayout = () => import("../layouts/PublicLayout.vue");
@@ -64,6 +65,11 @@ const routes = [
         path: "theodoimuonsach",
         name: "TheoDoiMuonSach",
         component: TheoDoiMuonSach,
+      },
+      {
+        path: "phieudangky",
+        name: "PhieuDangKy",
+        component: PhieuDangKy,
       },
       { path: "thongke", name: "ThongKe", component: Dashboard },
       { path: "settings", name: "Settings", component: Dashboard },

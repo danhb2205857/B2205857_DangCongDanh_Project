@@ -189,19 +189,7 @@
       </div>
     </div>
 
-    <!-- Borrow/Return Stats Chart -->
-    <div class="row mb-4">
-      <div class="col-lg-12">
-        <div class="card shadow">
-          <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Thống kê mượn/trả sách 7 ngày</h6>
-          </div>
-          <div class="card-body">
-            <DashboardChart :chartData="chartData" :options="chartOptions" />
-          </div>
-        </div>
-      </div>
-    </div>
+    
 
     <!-- Overdue Books Alert -->
     <div v-if="stats.overview?.overdueBorrows > 0" class="row">

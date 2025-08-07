@@ -94,6 +94,12 @@ const menuItems = computed(() => {
       path: '/admin/theodoimuonsach',
       label: 'Mượn trả sách',
       icon: 'bi bi-arrow-repeat'
+    },
+    {
+      name: 'phieudangky',
+      path: '/admin/phieudangky',
+      label: 'Phiếu đăng ký',
+      icon: 'bi bi-clipboard-check'
     }
   ]
 })

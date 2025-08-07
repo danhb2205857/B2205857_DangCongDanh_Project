@@ -52,7 +52,9 @@ const theoDoiMuonSachSchema = new mongoose.Schema({
   },
   NhanVienMuon: {
     type: String,
-    required: [true, 'Nhân viên xử lý mượn là bắt buộc'],
+    required: function() {
+      return this.isActivate === 1; // Only required when activated
+    },
     ref: 'NhanVien'
   },
   NhanVienTra: {
@@ -69,6 +71,15 @@ const theoDoiMuonSachSchema = new mongoose.Schema({
       },
       message: 'Phí phạt phải là số nguyên'
     }
+  },
+  isActivate: {
+    type: Number,
+    enum: {
+      values: [0, 1],
+      message: 'isActivate phải là 0 (chờ duyệt) hoặc 1 (đã duyệt)'
+    },
+    default: 1,
+    comment: '0: Đăng ký chờ duyệt, 1: Đã được duyệt/Nhân viên tạo'
   }
 }, {
   timestamps: true,

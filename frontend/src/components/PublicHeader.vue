@@ -73,6 +73,14 @@
                 Liên hệ
               </router-link>
             </li>
+
+            <!-- Borrow Registration Button - Only for authenticated users -->
+            <li class="nav-item" v-if="isAuthenticated">
+              <a href="#" @click.prevent="showBorrowRegistrationModal" class="nav-link">
+                <i class="fas fa-book-reader me-1"></i>
+                Đăng ký mượn sách
+              </a>
+            </li>
           </ul>
 
           <!-- Search Form -->
@@ -147,6 +155,78 @@
         <button type="button" class="btn-close" @click="clearMessage" aria-label="Close"></button>
       </div>
     </div>
+
+    <!-- Borrow Registration Modal -->
+    <div class="modal-backdrop fade" :class="{ show: showBorrowModal }" v-show="showBorrowModal"></div>
+    <div class="modal fade" :class="{ show: showBorrowModal }" style="display: block;" tabindex="-1" v-show="showBorrowModal" @click.self="closeBorrowModal">
+      <div class="modal-dialog modal-lg" @click.stop>
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">
+              <i class="fas fa-book-reader me-2"></i>
+              Đăng ký mượn sách
+            </h5>
+            <button type="button" class="btn-close" @click="closeBorrowModal"></button>
+          </div>
+          <div class="modal-body">
+            <form @submit.prevent="submitBorrowRegistration">
+              <!-- Reader Info (Read-only) -->
+              <div class="row mb-3">
+                <div class="col-md-6">
+                  <label class="form-label">Độc giả</label>
+                  <input type="text" class="form-control" :value="user.HoLot && user.Ten ? `${user.HoLot} ${user.Ten}` : `${user.HoLot} ${user.Ten}` || ''" readonly>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Mã độc giả</label>
+                  <input type="text" class="form-control" :value="user.MaDocGia" readonly>
+                </div>
+              </div>
+
+              <!-- Book Selection -->
+              <div class="mb-3">
+                <label class="form-label">Chọn sách <span class="text-danger">*</span></label>
+                <select v-model="borrowForm.MaSach" class="form-select" :class="{ 'is-invalid': borrowErrors.MaSach }">
+                  <option value="">-- Chọn sách --</option>
+                  <option v-for="book in availableBooks" :key="book.MaSach" :value="book.MaSach">
+                    {{ book.TenSach }} (Còn: {{ book.SoQuyenConLai || book.SoQuyen }})
+                  </option>
+                </select>
+                <div v-if="borrowErrors.MaSach" class="invalid-feedback">{{ borrowErrors.MaSach }}</div>
+              </div>
+
+              <!-- Expected Return Date -->
+              <div class="mb-3">
+                <label class="form-label">Ngày hẹn trả <span class="text-danger">*</span></label>
+                <input type="date" v-model="borrowForm.NgayHenTra" class="form-control" 
+                       :class="{ 'is-invalid': borrowErrors.NgayHenTra }" :min="tomorrow">
+                <div v-if="borrowErrors.NgayHenTra" class="invalid-feedback">{{ borrowErrors.NgayHenTra }}</div>
+                <small class="form-text text-muted">Thời gian mượn tối đa 30 ngày</small>
+              </div>
+
+              <!-- Note -->
+              <div class="mb-3">
+                <label class="form-label">Ghi chú</label>
+                <textarea v-model="borrowForm.GhiChu" class="form-control" rows="3" 
+                          placeholder="Ghi chú thêm (không bắt buộc)"></textarea>
+              </div>
+
+              <!-- Warning -->
+              <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                <strong>Lưu ý:</strong> Đây là đăng ký mượn sách. Yêu cầu của bạn sẽ được gửi đến thư viện để xem xét và phê duyệt.
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" @click="closeBorrowModal">Hủy</button>
+            <button type="button" class="btn btn-primary" @click="submitBorrowRegistration" :disabled="submitting">
+              <i class="fas fa-paper-plane me-2"></i>
+              {{ submitting ? 'Đang gửi...' : 'Gửi đăng ký' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </header>
 </template>
 
@@ -166,6 +246,16 @@ export default {
     const messageType = ref('success')
     const showUserDropdown = ref(false)
     const showCategoriesDropdown = ref(false)
+    const showBorrowModal = ref(false)
+    const submitting = ref(false)
+    const availableBooks = ref([])
+    const borrowForm = ref({
+      MaSach: '',
+      NgayHenTra: '',
+      GhiChu: ''
+    })
+    const borrowErrors = ref({})
+
 
     const loadTopCategories = async () => {
       try {
@@ -231,6 +321,108 @@ export default {
       showCategoriesDropdown.value = false
     }
 
+    // Computed for tomorrow date
+    const tomorrow = computed(() => {
+      const date = new Date()
+      date.setDate(date.getDate() + 1)
+      return date.toISOString().split('T')[0]
+    })
+
+    // Load available books
+    const loadAvailableBooks = async () => {
+      try {
+        const response = await axios.get('/sach/available')
+        if (response.data.success) {
+          availableBooks.value = response.data.data || []
+        }
+      } catch (error) {
+        console.error('Error loading books:', error)
+      }
+    }
+
+    // Show borrow registration modal
+    const showBorrowRegistrationModal = async () => {
+      await loadAvailableBooks()
+      resetBorrowForm()
+      showBorrowModal.value = true
+      closeDropdowns()
+      // Prevent body scroll
+      document.body.style.overflow = 'hidden'
+    }
+
+    // Close borrow modal
+    const closeBorrowModal = () => {
+      showBorrowModal.value = false
+      resetBorrowForm()
+      // Restore body scroll
+      document.body.style.overflow = ''
+    }
+
+    // Reset form
+    const resetBorrowForm = () => {
+      borrowForm.value = {
+        MaSach: '',
+        NgayHenTra: '',
+        GhiChu: ''
+      }
+      borrowErrors.value = {}
+    }
+
+    // Validate form
+    const validateBorrowForm = () => {
+      borrowErrors.value = {}
+
+      if (!borrowForm.value.MaSach) {
+        borrowErrors.value.MaSach = 'Vui lòng chọn sách'
+      }
+
+      if (!borrowForm.value.NgayHenTra) {
+        borrowErrors.value.NgayHenTra = 'Vui lòng chọn ngày hẹn trả'
+      } else {
+        const dueDate = new Date(borrowForm.value.NgayHenTra)
+        const today = new Date()
+        const maxDate = new Date()
+        maxDate.setDate(today.getDate() + 30)
+
+        if (dueDate <= today) {
+          borrowErrors.value.NgayHenTra = 'Ngày hẹn trả phải sau ngày hôm nay'
+        } else if (dueDate > maxDate) {
+          borrowErrors.value.NgayHenTra = 'Thời gian mượn tối đa 30 ngày'
+        }
+      }
+
+      return Object.keys(borrowErrors.value).length === 0
+    }
+
+    // Submit borrow registration
+    const submitBorrowRegistration = async () => {
+      if (!validateBorrowForm()) return
+
+      submitting.value = true
+      try {
+        const requestData = {
+          MaDocGia: user.value.MaDocGia,
+          MaSach: borrowForm.value.MaSach,
+          NgayHenTra: borrowForm.value.NgayHenTra,
+          GhiChu: borrowForm.value.GhiChu
+        }
+
+        const response = await axios.post('/theodoimuonsach/register', requestData)
+        
+        if (response.data.success) {
+          showMessage('Đăng ký mượn sách thành công! Vui lòng chờ thư viện phê duyệt.', 'success')
+          closeBorrowModal()
+        } else {
+          showMessage(response.data.message || 'Có lỗi xảy ra khi đăng ký', 'error')
+        }
+      } catch (error) {
+        console.error('Error submitting borrow registration:', error)
+        showMessage(error.response?.data?.message || 'Có lỗi xảy ra khi đăng ký', 'error')
+      } finally {
+        submitting.value = false
+      }
+    }
+
     // Listen for global messages
     const handleGlobalMessage = (event) => {
       if (event.detail) {
@@ -261,6 +453,12 @@ export default {
       isAuthenticated,
       showUserDropdown,
       showCategoriesDropdown,
+      showBorrowModal,
+      submitting,
+      availableBooks,
+      borrowForm,
+      borrowErrors,
+      tomorrow,
       handleSearch,
       logout,
       handleLogout,
@@ -269,7 +467,10 @@ export default {
       handleAvatarError,
       toggleUserDropdown,
       toggleCategoriesDropdown,
-      closeDropdowns
+      closeDropdowns,
+      showBorrowRegistrationModal,
+      closeBorrowModal,
+      submitBorrowRegistration
     }
   }
 }
@@ -407,5 +608,33 @@ export default {
 .dropdown-menu-end {
   right: 0;
   left: auto;
+}
+
+/* Modal styles */
+.modal {
+  z-index: 1055;
+}
+
+.modal-backdrop {
+  z-index: 1050;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal.show {
+  display: block !important;
+}
+
+.modal-backdrop.show {
+  opacity: 0.5;
+}
+
+/* Fix modal animation */
+.modal.fade .modal-dialog {
+  transition: transform 0.3s ease-out;
+  transform: translate(0, -50px);
+}
+
+.modal.show .modal-dialog {
+  transform: none;
 }
 </style>

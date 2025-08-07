@@ -98,6 +98,18 @@ export default {
     if (status) {
       searchQuery.TrangThai = status;
     }
+    
+    // Handle different activation status filters
+    const includeInactive = req.query.includeInactive === 'true';
+    const onlyPending = req.query.onlyPending === 'true';
+    
+    if (onlyPending) {
+      searchQuery.isActivate = 0; // Only show pending requests
+    } else if (!includeInactive) {
+      searchQuery.isActivate = 1; // Only show approved requests by default
+    }
+    // If includeInactive is true, show both (no filter on isActivate)
+    
     console.log("Search query built:", JSON.stringify(searchQuery));
 
     // Get total count for pagination
@@ -648,5 +660,221 @@ export default {
         error: 'TEST_OVERDUE_ERROR'
       });
     }
+  },
+
+  /**
+   * POST /api/theodoimuonsach/register - Đăng ký mượn sách (cho độc giả)
+   */
+  async registerBorrow(req, res) {
+    console.log('Reader registering borrow request:', req.body);
+
+    const { MaDocGia, MaSach, NgayHenTra, GhiChu } = req.body;
+
+    // Validate required fields
+    if (!MaDocGia || !MaSach || !NgayHenTra) {
+      throw new AppError(
+        'Thiếu thông tin bắt buộc',
+        400,
+        'MISSING_REQUIRED_FIELDS'
+      );
+    }
+
+    // Check if reader exists
+    console.log('Checking if reader exists:', MaDocGia);
+    const docGia = await DocGia.findOne({ MaDocGia }).lean();
+    if (!docGia) {
+      throw new AppError('Không tìm thấy độc giả', 404, 'DOCGIA_NOT_FOUND');
+    }
+
+    // Check if book exists and available
+    console.log('Checking if book exists:', MaSach);
+    const sach = await Sach.findOne({ MaSach }).lean();
+    if (!sach) {
+      throw new AppError('Không tìm thấy sách', 404, 'SACH_NOT_FOUND');
+    }
+
+    const soQuyenConLai =
+      sach.SoQuyenConLai !== undefined ? sach.SoQuyenConLai : sach.SoQuyen;
+    if (soQuyenConLai <= 0) {
+      throw new AppError('Sách đã hết', 400, 'BOOK_OUT_OF_STOCK');
+    }
+
+    // Check if reader already has pending or active borrow for this book
+    console.log('Checking existing borrow record...');
+    const existingBorrow = await TheoDoiMuonSach.findOne({
+      MaDocGia,
+      MaSach,
+      TrangThai: { $ne: 'Đã trả' },
+    }).lean();
+
+    if (existingBorrow) {
+      if (existingBorrow.isActivate === 0) {
+        throw new AppError(
+          'Bạn đã có đăng ký mượn sách này đang chờ duyệt',
+          400,
+          'PENDING_REQUEST_EXISTS'
+        );
+      } else {
+        throw new AppError(
+          'Bạn đã mượn sách này và chưa trả',
+          400,
+          'ALREADY_BORROWED'
+        );
+      }
+    }
+
+    // Validate due date
+    const dueDate = new Date(NgayHenTra);
+    const today = new Date();
+    const maxDate = new Date();
+    maxDate.setDate(today.getDate() + 30);
+
+    if (dueDate <= today) {
+      throw new AppError(
+        'Ngày hẹn trả phải sau ngày hôm nay',
+        400,
+        'INVALID_DUE_DATE'
+      );
+    }
+
+    if (dueDate > maxDate) {
+      throw new AppError(
+        'Thời gian mượn tối đa 30 ngày',
+        400,
+        'EXCEED_MAX_BORROW_PERIOD'
+      );
+    }
+
+    // Generate next ID
+    const MaTheoDoiMuonSach = await generateNextId();
+
+    // Create borrow registration (pending approval)
+    console.log('Creating borrow registration...');
+    const theoDoiMuonSach = new TheoDoiMuonSach({
+      MaTheoDoiMuonSach,
+      MaDocGia,
+      MaSach,
+      NgayMuon: new Date(),
+      NgayHenTra: new Date(NgayHenTra),
+      GhiChu: GhiChu || 'Đăng ký mượn sách từ độc giả',
+      TrangThai: 'Đang mượn',
+      isActivate: 0, // Pending approval
+      // No NhanVienMuon for registration - will be set when approved
+    });
+
+    await theoDoiMuonSach.save();
+    console.log('Borrow registration saved successfully');
+
+    // Return the registration record
+    const savedRecord = await TheoDoiMuonSach.findById(
+      theoDoiMuonSach._id
+    ).lean();
+
+    res.status(201).json({
+      success: true,
+      message: 'Đăng ký mượn sách thành công. Vui lòng chờ thư viện phê duyệt.',
+      data: savedRecord,
+    });
+
+    console.log('Borrow registration completed successfully');
+  },
+
+  /**
+   * POST /api/theodoimuonsach/:id/approve - Duyệt phiếu đăng ký mượn sách
+   */
+  async approveRequest(req, res) {
+    console.log('Approving borrow request:', req.params.id);
+
+    const theoDoiMuonSach = await TheoDoiMuonSach.findOne({
+      MaTheoDoiMuonSach: req.params.id,
+    });
+
+    if (!theoDoiMuonSach) {
+      throw new AppError(
+        'Không tìm thấy phiếu đăng ký',
+        404,
+        'REQUEST_NOT_FOUND'
+      );
+    }
+
+    if (theoDoiMuonSach.isActivate === 1) {
+      throw new AppError(
+        'Phiếu đăng ký đã được duyệt',
+        400,
+        'ALREADY_APPROVED'
+      );
+    }
+
+    // Check if book is still available
+    const sach = await Sach.findOne({ MaSach: theoDoiMuonSach.MaSach });
+    if (!sach) {
+      throw new AppError('Không tìm thấy sách', 404, 'SACH_NOT_FOUND');
+    }
+
+    const soQuyenConLai = sach.SoQuyenConLai !== undefined ? sach.SoQuyenConLai : sach.SoQuyen;
+    if (soQuyenConLai <= 0) {
+      throw new AppError('Sách đã hết, không thể duyệt', 400, 'BOOK_OUT_OF_STOCK');
+    }
+
+    // Get current user (staff) info
+    const currentUser = req.user || { MSNV: 'NV001' }; // Default fallback
+
+    // Approve the request
+    theoDoiMuonSach.isActivate = 1;
+    theoDoiMuonSach.NhanVienMuon = currentUser.MSNV || 'NV001';
+    theoDoiMuonSach.GhiChu = (theoDoiMuonSach.GhiChu || '') + ' - Đã được duyệt bởi nhân viên';
+
+    await theoDoiMuonSach.save();
+
+    // Decrease book available quantity
+    await Sach.findOneAndUpdate(
+      { MaSach: theoDoiMuonSach.MaSach },
+      { $inc: { SoQuyenConLai: -1 } }
+    );
+
+    res.json({
+      success: true,
+      message: 'Duyệt phiếu đăng ký thành công',
+      data: theoDoiMuonSach,
+    });
+
+    console.log('Request approved successfully');
+  },
+
+  /**
+   * DELETE /api/theodoimuonsach/:id/reject - Từ chối phiếu đăng ký mượn sách
+   */
+  async rejectRequest(req, res) {
+    console.log('Rejecting borrow request:', req.params.id);
+
+    const theoDoiMuonSach = await TheoDoiMuonSach.findOne({
+      MaTheoDoiMuonSach: req.params.id,
+    });
+
+    if (!theoDoiMuonSach) {
+      throw new AppError(
+        'Không tìm thấy phiếu đăng ký',
+        404,
+        'REQUEST_NOT_FOUND'
+      );
+    }
+
+    if (theoDoiMuonSach.isActivate === 1) {
+      throw new AppError(
+        'Không thể từ chối phiếu đã được duyệt',
+        400,
+        'CANNOT_REJECT_APPROVED'
+      );
+    }
+
+    // Delete the request
+    await TheoDoiMuonSach.deleteOne({ MaTheoDoiMuonSach: req.params.id });
+
+    res.json({
+      success: true,
+      message: 'Từ chối phiếu đăng ký thành công',
+    });
+
+    console.log('Request rejected successfully');
   }
 };

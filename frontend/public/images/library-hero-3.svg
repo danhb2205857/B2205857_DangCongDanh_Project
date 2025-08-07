@@ -1,0 +1,16 @@
+<svg width="1920" height="400" viewBox="0 0 1920 400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="heroGrad3" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4facfe;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#00f2fe;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="1920" height="400" fill="url(#heroGrad3)"/>
+  <g fill="rgba(255,255,255,0.1)">
+    <rect x="400" y="120" width="300" height="160" rx="8"/>
+    <rect x="800" y="140" width="200" height="120" rx="8"/>
+    <circle cx="1200" cy="200" r="80"/>
+  </g>
+  <text x="960" y="180" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="48" font-weight="bold">KHÔNG GIAN HỌC TẬP LÝ TƯỞNG</text>
+  <text x="960" y="220" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-family="Arial, sans-serif" font-size="24">Môi trường yên tĩnh, thuận lợi cho việc học tập</text>
+</svg>
