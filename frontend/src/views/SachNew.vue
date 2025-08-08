@@ -38,7 +38,7 @@
                   <tr>
                     <th style="width: 100px;">Mã sách</th>
                     <th>Tên sách</th>
-                    <th style="width: 120px;">Đơn giá mượn</th>
+                    
                     <th style="width: 100px;">Tổng số</th>
                     <th style="width: 100px;">Còn lại</th>
                     <th style="width: 100px;">Năm XB</th>
@@ -53,9 +53,7 @@
                       <span class="badge bg-primary">{{ sach.MaSach }}</span>
                     </td>
                     <td class="fw-bold">{{ sach.TenSach }}</td>
-                    <td class="text-end">
-                      <span class="text-success fw-bold">{{ formatCurrency(sach.DonGia) }}</span>
-                    </td>
+                    
                     <td class="text-center">
                       <span class="badge bg-info">{{ sach.SoQuyen }}</span>
                     </td>
