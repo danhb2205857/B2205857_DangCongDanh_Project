@@ -222,6 +222,10 @@ export default {
     });
 
     if (borrowCount > 0) {
+      return res.status(400).json({
+      success: true,
+      message: "Không thể xóa sách đang được mượn",
+    });
       throw new AppError('Không thể xóa sách đang được mượn', 400, 'BOOK_IS_BORROWED');
     }
 
